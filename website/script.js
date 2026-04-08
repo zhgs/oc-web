@@ -1,14 +1,23 @@
-// 显示当前时间
-document.addEventListener('DOMContentLoaded', function() {
-    const timeElement = document.getElementById('time');
-    const now = new Date();
-    const options = { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric', 
-        hour: '2-digit', 
-        minute: '2-digit',
-        timeZone: 'Asia/Shanghai'
-    };
-    timeElement.textContent = now.toLocaleString('zh-CN', options);
-});
+// 弹窗功能
+function showAddGuide() {
+    document.getElementById('guideModal').style.display = 'block';
+}
+
+function closeModal() {
+    document.getElementById('guideModal').style.display = 'none';
+}
+
+// 点击弹窗外部关闭
+window.onclick = function(event) {
+    const modal = document.getElementById('guideModal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// ESC 键关闭弹窗
+document.onkeydown = function(event) {
+    if (event.key === 'Escape') {
+        closeModal();
+    }
+};

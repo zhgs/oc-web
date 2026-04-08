@@ -3,44 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>周广生的测试页面</title>
+    <title>周广生 - 导航中心</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>👋 你好，我是周广生</h1>
-            <p class="subtitle">Java + Python 开发 & 运维工程师</p>
+            <h1>🧭 导航中心</h1>
+            <p class="subtitle">周广生的个人网页集合</p>
         </header>
         
         <main>
-            <section class="card">
-                <h2>🚀 关于我</h2>
-                <p>专注于 Java 和 Python 开发，同时负责运维相关工作。</p>
-                <p>热衷于自动化工具和效率提升。</p>
-            </section>
+            <!-- 项目卡片区域 -->
+            <div class="projects-grid" id="projects">
+                <!-- 项目1: 测试页面 -->
+                <a href="test-page/index.html" class="project-card">
+                    <div class="card-icon">🧪</div>
+                    <h3>测试页面</h3>
+                    <p>OpenClaw 部署测试</p>
+                    <span class="card-tag">测试</span>
+                </a>
+                
+                <!-- 更多项目可以在这里添加 -->
+                
+            </div>
             
-            <section class="card">
-                <h2>🛠️ 技术栈</h2>
-                <ul>
-                    <li>Java 后端开发</li>
-                    <li>Python 脚本与自动化</li>
-                    <li>Linux 运维</li>
-                    <li>OpenClaw 技能开发</li>
-                </ul>
-            </section>
-            
-            <section class="card">
-                <h2>📝 最近更新</h2>
-                <p>这是通过 GitHub Pages 自动部署的测试页面。</p>
-                <p>✅ 部署系统已配置完成！</p>
-                <p class="timestamp">部署时间: <span id="time"></span></p>
-            </section>
+            <!-- 添加新项目提示 -->
+            <div class="add-card" onclick="showAddGuide()">
+                <div class="card-icon">➕</div>
+                <h3>添加新项目</h3>
+                <p>点击查看如何添加新页面</p>
+            </div>
         </main>
         
         <footer>
-            <p>Powered by GitHub Pages | 2026</p>
+            <p>Powered by GitHub Pages | <a href="https://github.com/zhgs/oc-web">源码</a></p>
         </footer>
+    </div>
+    
+    <!-- 添加项目指南弹窗 -->
+    <div id="guideModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>📝 添加新项目指南</h2>
+            
+            <div class="guide-section">
+                <h3>步骤 1: 创建项目文件夹</h3>
+                <p>在 <code>website/</code> 目录下创建新文件夹，如 <code>my-project/</code></p>
+            </div>
+            
+            <div class="guide-section">
+                <h3>步骤 2: 创建 index.html</h3>
+                <p>在新文件夹中创建 <code>index.html</code> 文件</p>
+            </div>
+            
+            <div class="guide-section">
+                <h3>步骤 3: 更新导航页</h3>
+                <p>在 <code>website/index.html</code> 中添加新的项目卡片：</p>
+                <pre>&lt;a href="my-project/index.html" class="project-card"&gt;
+    &lt;div class="card-icon"&gt;📦&lt;/div&gt;
+    &lt;h3&gt;项目名称&lt;/h3&gt;
+    &lt;p&gt;项目描述&lt;/p&gt;
+    &lt;span class="card-tag"&gt;标签&lt;/span&gt;
+&lt;/a&gt;</pre>
+            </div>
+            
+            <div class="guide-section">
+                <h3>步骤 4: 推送发布</h3>
+                <pre>git add .
+git commit -m "Add: 新项目名称"
+git push</pre>
+            </div>
+        </div>
     </div>
     
     <script src="script.js"></script>
