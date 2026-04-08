@@ -11,13 +11,60 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 15px;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .back-link:hover { text-decoration: underline; }
+        .main-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .sidebar {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            height: fit-content;
+        }
+        .sidebar h3 {
+            color: #667eea;
+            margin-bottom: 12px;
+            font-size: 1.2em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+        .sidebar p, .sidebar ul {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+        }
+        .sidebar ul {
+            padding-left: 20px;
+        }
+        .sidebar li {
+            margin-bottom: 6px;
+        }
+        .story-box {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+            border-left: 3px solid #667eea;
+        }
+        .story-box strong {
+            color: #667eea;
         }
         .container {
-            max-width: 600px;
-            width: 100%;
             background: white;
             border-radius: 20px;
             padding: 30px;
@@ -27,14 +74,6 @@
             text-align: center;
             margin-bottom: 20px;
         }
-        .back-link {
-            display: inline-block;
-            margin-bottom: 15px;
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        .back-link:hover { text-decoration: underline; }
         h1 { color: #333; font-size: 2em; margin-bottom: 10px; }
         .subtitle { color: #666; margin-bottom: 20px; }
         .controls {
@@ -165,6 +204,14 @@
             color: #155724;
             display: block;
         }
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                display: none;
+            }
+        }
         @media (max-width: 600px) {
             .container { padding: 20px; }
             h1 { font-size: 1.5em; }
@@ -174,48 +221,104 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <a href="../index.html" class="back-link">← 返回导航中心</a>
-            <h1>🚀 9宫格数独</h1>
-            <p class="subtitle">训练逻辑思维，挑战你的大脑！</p>
-        </div>
+    <a href="../index.html" class="back-link">← 返回导航中心</a>
+    
+    <div class="main-layout">
+        <!-- 左侧边栏：规则和起源 -->
+        <div class="sidebar">
+            <h3>📖 游戏规则</h3>
+            <p>数独是一个9×9的方格游戏，目标是填满所有空格：</p>
+            <ul>
+                <li>每一行的数字1-9不能重复</li>
+                <li>每一列的数字1-9不能重复</li>
+                <li>每个3×3宫格内1-9不能重复</li>
+            </ul>
+            <p>只需要运用逻辑推理，不需要数学计算！</p>
 
-        <div class="controls">
-            <button class="btn-primary" onclick="newGame()">新游戏</button>
-            <button class="btn-secondary" onclick="checkSolution()">检查答案</button>
-            <button class="btn-secondary" onclick="clearCell()">清除</button>
-            <button class="btn-secondary" onclick="showHint()">提示</button>
-        </div>
-
-        <div class="sudoku-board" id="board"></div>
-
-        <div class="number-pad">
-            <button class="number-btn" onclick="inputNumber(1)">1</button>
-            <button class="number-btn" onclick="inputNumber(2)">2</button>
-            <button class="number-btn" onclick="inputNumber(3)">3</button>
-            <button class="number-btn" onclick="inputNumber(4)">4</button>
-            <button class="number-btn" onclick="inputNumber(5)">5</button>
-            <button class="number-btn" onclick="inputNumber(6)">6</button>
-            <button class="number-btn" onclick="inputNumber(7)">7</button>
-            <button class="number-btn" onclick="inputNumber(8)">8</button>
-            <button class="number-btn" onclick="inputNumber(9)">9</button>
-            <button class="number-btn" onclick="clearCell()">清除</button>
-        </div>
-
-        <div class="stats">
-            <div class="stats-item">
-                难度: <span class="stats-value" id="difficulty">简单</span>
-            </div>
-            <div class="stats-item">
-                已填: <span class="stats-value" id="filled">0</span>/81
-            </div>
-            <div class="stats-item">
-                错误: <span class="stats-value" id="errors">0</span>
+            <h3>🌏 起源背景</h3>
+            <p>数独起源于18世纪的瑞士数学家欧拉发明的"拉丁方阵"。</p>
+            <p>1984年，日本人将其改良并命名为"数独"（Sudoku），意为"单独的数字"。</p>
+            <p>2005年，英国《泰晤士报》开始刊登数独谜题，迅速风靡全球，成为最受欢迎的益智游戏之一。</p>
+            
+            <div class="story-box">
+                <strong>💡 趣闻：</strong>
+                <p>世界上最难的数独谜题被称为"AI Escargot"，由芬兰数学家设计，据说需要超过1000步才能解开！</p>
             </div>
         </div>
 
-        <div class="message" id="message"></div>
+        <!-- 中间：游戏主体 -->
+        <div class="container">
+            <div class="header">
+                <h1>🚀 9宫格数独</h1>
+                <p class="subtitle">训练逻辑思维，挑战你的大脑！</p>
+            </div>
+
+            <div class="controls">
+                <button class="btn-primary" onclick="newGame()">新游戏</button>
+                <button class="btn-secondary" onclick="checkSolution()">检查答案</button>
+                <button class="btn-secondary" onclick="clearCell()">清除</button>
+                <button class="btn-secondary" onclick="showHint()">提示</button>
+            </div>
+
+            <div class="sudoku-board" id="board"></div>
+
+            <div class="number-pad">
+                <button class="number-btn" onclick="inputNumber(1)">1</button>
+                <button class="number-btn" onclick="inputNumber(2)">2</button>
+                <button class="number-btn" onclick="inputNumber(3)">3</button>
+                <button class="number-btn" onclick="inputNumber(4)">4</button>
+                <button class="number-btn" onclick="inputNumber(5)">5</button>
+                <button class="number-btn" onclick="inputNumber(6)">6</button>
+                <button class="number-btn" onclick="inputNumber(7)">7</button>
+                <button class="number-btn" onclick="inputNumber(8)">8</button>
+                <button class="number-btn" onclick="inputNumber(9)">9</button>
+                <button class="number-btn" onclick="clearCell()">清除</button>
+            </div>
+
+            <div class="stats">
+                <div class="stats-item">
+                    难度: <span class="stats-value" id="difficulty">简单</span>
+                </div>
+                <div class="stats-item">
+                    已填: <span class="stats-value" id="filled">0</span>/81
+                </div>
+                <div class="stats-item">
+                    错误: <span class="stats-value" id="errors">0</span>
+                </div>
+            </div>
+
+            <div class="message" id="message"></div>
+        </div>
+
+        <!-- 右侧边栏：益处和小故事 -->
+        <div class="sidebar">
+            <h3>🧠 玩数独的益处</h3>
+            <ul>
+                <li><strong>提升逻辑思维：</strong>培养推理和分析能力</li>
+                <li><strong>增强专注力：</strong>训练持续集中注意力</li>
+                <li><strong>改善记忆力：</strong>锻炼工作记忆和短期记忆</li>
+                <li><strong>减缓大脑衰老：</strong>保持大脑活跃和敏锐</li>
+                <li><strong>缓解压力：</strong>沉浸式体验带来放松</li>
+            </ul>
+            <p>研究表明，每天玩15分钟数独，可以显著提升认知能力！</p>
+
+            <h3>📚 有趣的小故事</h3>
+            
+            <div class="story-box">
+                <strong>🏆 数独冠军的秘密</strong>
+                <p>2019年世界数独锦标赛冠军透露，他从不死记硬背，而是把每个格子想象成一个"小房间"，数字是"住客"，通过"谁能住哪里"的逻辑来解题。</p>
+            </div>
+
+            <div class="story-box">
+                <strong>👦 小学生的奇迹</strong>
+                <p>日本一位8岁小学生能在3分钟内完成高难度数独，他的秘诀是：先找"唯一候选数"，再用"排除法"，最后才填数字。这个方法后来被写进了教科书！</p>
+            </div>
+
+            <div class="story-box">
+                <strong>🎓 数独进课堂</strong>
+                <p>新加坡、芬兰等国家已将数独纳入小学数学课程，作为培养逻辑思维的重要工具。老师们发现，玩数独的学生在数学考试中表现更出色！</p>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -282,7 +385,7 @@
         function createPuzzle(solution, difficulty = 40) {
             const puzzle = solution.map(row => [...row]);
             let removed = 0;
-            const target = difficulty; // 移除的数字数量
+            const target = difficulty;
 
             while (removed < target) {
                 const row = Math.floor(Math.random() * 9);
@@ -298,7 +401,7 @@
         function newGame() {
             errors = 0;
             solution = generateSolution();
-            board = createPuzzle(solution, 40); // 移除40个数字（简单难度）
+            board = createPuzzle(solution, 40);
             renderBoard();
             updateStats();
             hideMessage();
@@ -328,7 +431,7 @@
 
         function selectCell(row, col) {
             if (board[row][col] !== 0 && solution[row][col] === board[row][col]) {
-                return; // 固定的单元格不能选择
+                return;
             }
             
             document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected'));
@@ -342,7 +445,7 @@
             
             const { row, col } = selectedCell;
             if (board[row][col] !== 0 && solution[row][col] === board[row][col]) {
-                return; // 固定的单元格不能修改
+                return;
             }
             
             board[row][col] = num;
@@ -350,7 +453,6 @@
             cell.textContent = num;
             cell.classList.remove('error');
             
-            // 检查是否正确
             if (num !== solution[row][col]) {
                 cell.classList.add('error');
                 errors++;
