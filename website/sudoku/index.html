@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>9宫格数独 - 逻辑思维训练</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 15px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .back-link:hover { text-decoration: underline; }
+        h1 { color: #333; font-size: 2em; margin-bottom: 10px; }
+        .subtitle { color: #666; margin-bottom: 20px; }
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        .sudoku-board {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 0;
+            margin: 0 auto 20px;
+            width: 100%;
+            max-width: 450px;
+            border: 3px solid #333;
+            background: #333;
+        }
+        .cell {
+            aspect-ratio: 1;
+            border: 1px solid #999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            background: white;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .cell:hover:not(.fixed):not(.error) {
+            background: #f0f0ff;
+        }
+        .cell.fixed {
+            background: #e8e8e8;
+            color: #333;
+            cursor: default;
+        }
+        .cell.selected {
+            background: #d0d0ff;
+        }
+        .cell.error {
+            background: #ffcccc;
+            color: #cc0000;
+        }
+        .cell:nth-child(3n) {
+            border-right: 3px solid #333;
+        }
+        .cell:nth-child(n+19):nth-child(-n+27),
+        .cell:nth-child(n+46):nth-child(-n+54) {
+            border-bottom: 3px solid #333;
+        }
+        .number-pad {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin: 0 auto;
+            max-width: 400px;
+        }
+        .number-btn {
+            padding: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            background: #f8f8f8;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .number-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .stats {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f8f8;
+            border-radius: 10px;
+        }
+        .stats-item {
+            display: inline-block;
+            margin: 0 15px;
+            font-size: 16px;
+            color: #666;
+        }
+        .stats-value {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 20px;
+        }
+        .message {
+            text-align: center;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 10px;
+            font-weight: 600;
+            display: none;
+        }
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        @media (max-width: 600px) {
+            .container { padding: 20px; }
+            h1 { font-size: 1.5em; }
+            .cell { font-size: 20px; }
+            .number-btn { padding: 12px; font-size: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="../index.html" class="back-link">← 返回导航中心</a>
+            <h1>🚀 9宫格数独</h1>
+            <p class="subtitle">训练逻辑思维，挑战你的大脑！</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn-primary" onclick="newGame()">新游戏</button>
+            <button class="btn-secondary" onclick="checkSolution()">检查答案</button>
+            <button class="btn-secondary" onclick="clearCell()">清除</button>
+            <button class="btn-secondary" onclick="showHint()">提示</button>
+        </div>
+
+        <div class="sudoku-board" id="board"></div>
+
+        <div class="number-pad">
+            <button class="number-btn" onclick="inputNumber(1)">1</button>
+            <button class="number-btn" onclick="inputNumber(2)">2</button>
+            <button class="number-btn" onclick="inputNumber(3)">3</button>
+            <button class="number-btn" onclick="inputNumber(4)">4</button>
+            <button class="number-btn" onclick="inputNumber(5)">5</button>
+            <button class="number-btn" onclick="inputNumber(6)">6</button>
+            <button class="number-btn" onclick="inputNumber(7)">7</button>
+            <button class="number-btn" onclick="inputNumber(8)">8</button>
+            <button class="number-btn" onclick="inputNumber(9)">9</button>
+            <button class="number-btn" onclick="clearCell()">清除</button>
+        </div>
+
+        <div class="stats">
+            <div class="stats-item">
+                难度: <span class="stats-value" id="difficulty">简单</span>
+            </div>
+            <div class="stats-item">
+                已填: <span class="stats-value" id="filled">0</span>/81
+            </div>
+            <div class="stats-item">
+                错误: <span class="stats-value" id="errors">0</span>
+            </div>
+        </div>
+
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        let board = [];
+        let solution = [];
+        let selectedCell = null;
+        let errors = 0;
+
+        // 生成完整的数独解
+        function generateSolution() {
+            const grid = Array(9).fill(0).map(() => Array(9).fill(0));
+            fillGrid(grid);
+            return grid;
+        }
+
+        function fillGrid(grid) {
+            const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
+                    if (grid[row][col] === 0) {
+                        shuffle(numbers);
+                        for (let num of numbers) {
+                            if (isValid(grid, row, col, num)) {
+                                grid[row][col] = num;
+                                if (fillGrid(grid)) return true;
+                                grid[row][col] = 0;
+                            }
+                        }
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function isValid(grid, row, col, num) {
+            // 检查行
+            for (let x = 0; x < 9; x++) {
+                if (grid[row][x] === num) return false;
+            }
+            // 检查列
+            for (let x = 0; x < 9; x++) {
+                if (grid[x][col] === num) return false;
+            }
+            // 检查3x3宫格
+            const startRow = Math.floor(row / 3) * 3;
+            const startCol = Math.floor(col / 3) * 3;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (grid[startRow + i][startCol + j] === num) return false;
+                }
+            }
+            return true;
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // 创建谜题（移除一些数字）
+        function createPuzzle(solution, difficulty = 40) {
+            const puzzle = solution.map(row => [...row]);
+            let removed = 0;
+            const target = difficulty; // 移除的数字数量
+
+            while (removed < target) {
+                const row = Math.floor(Math.random() * 9);
+                const col = Math.floor(Math.random() * 9);
+                if (puzzle[row][col] !== 0) {
+                    puzzle[row][col] = 0;
+                    removed++;
+                }
+            }
+            return puzzle;
+        }
+
+        function newGame() {
+            errors = 0;
+            solution = generateSolution();
+            board = createPuzzle(solution, 40); // 移除40个数字（简单难度）
+            renderBoard();
+            updateStats();
+            hideMessage();
+        }
+
+        function renderBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    
+                    if (board[row][col] !== 0) {
+                        cell.textContent = board[row][col];
+                        cell.classList.add('fixed');
+                    }
+                    
+                    cell.addEventListener('click', () => selectCell(row, col));
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        function selectCell(row, col) {
+            if (board[row][col] !== 0 && solution[row][col] === board[row][col]) {
+                return; // 固定的单元格不能选择
+            }
+            
+            document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected'));
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            cell.classList.add('selected');
+            selectedCell = { row, col };
+        }
+
+        function inputNumber(num) {
+            if (!selectedCell) return;
+            
+            const { row, col } = selectedCell;
+            if (board[row][col] !== 0 && solution[row][col] === board[row][col]) {
+                return; // 固定的单元格不能修改
+            }
+            
+            board[row][col] = num;
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            cell.textContent = num;
+            cell.classList.remove('error');
+            
+            // 检查是否正确
+            if (num !== solution[row][col]) {
+                cell.classList.add('error');
+                errors++;
+            }
+            
+            updateStats();
+            checkWin();
+        }
+
+        function clearCell() {
+            if (!selectedCell) return;
+            
+            const { row, col } = selectedCell;
+            if (board[row][col] !== 0 && solution[row][col] === board[row][col]) {
+                return;
+            }
+            
+            board[row][col] = 0;
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            cell.textContent = '';
+            cell.classList.remove('error');
+            updateStats();
+        }
+
+        function checkSolution() {
+            let correct = true;
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
+                    const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                    if (board[row][col] === 0) {
+                        correct = false;
+                    } else if (board[row][col] !== solution[row][col]) {
+                        cell.classList.add('error');
+                        correct = false;
+                    } else {
+                        cell.classList.remove('error');
+                    }
+                }
+            }
+            
+            if (correct) {
+                showMessage('🎉 恭喜你！全部正确！', 'success');
+            } else {
+                showMessage('还有错误，继续加油！', 'error');
+            }
+        }
+
+        function showHint() {
+            if (!selectedCell) {
+                alert('请先选择一个格子');
+                return;
+            }
+            
+            const { row, col } = selectedCell;
+            if (board[row][col] !== 0 && solution[row][col] === board[row][col]) {
+                alert('这个格子已经是正确答案了！');
+                return;
+            }
+            
+            board[row][col] = solution[row][col];
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            cell.textContent = solution[row][col];
+            cell.classList.remove('error');
+            cell.classList.add('fixed');
+            updateStats();
+            checkWin();
+        }
+
+        function updateStats() {
+            let filled = 0;
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
+                    if (board[row][col] !== 0) filled++;
+                }
+            }
+            document.getElementById('filled').textContent = filled;
+            document.getElementById('errors').textContent = errors;
+        }
+
+        function checkWin() {
+            let complete = true;
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
+                    if (board[row][col] !== solution[row][col]) {
+                        complete = false;
+                        break;
+                    }
+                }
+                if (!complete) break;
+            }
+            
+            if (complete) {
+                showMessage('🎉 太棒了！你成功完成了数独！', 'success');
+            }
+        }
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = 'message ' + type;
+        }
+
+        function hideMessage() {
+            document.getElementById('message').className = 'message';
+        }
+
+        // 键盘输入支持
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '1' && e.key <= '9') {
+                inputNumber(parseInt(e.key));
+            } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                clearCell();
+            }
+        });
+
+        // 初始化游戏
+        newGame();
+    </script>
+</body>
+</html>
