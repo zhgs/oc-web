@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🖼️ 逻辑拼图 - 图形推理训练</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-group label {
+            font-weight: bold;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        select, button {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        select {
+            background: white;
+            color: #333;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .game-area {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .preview-area {
+            text-align: center;
+        }
+
+        .preview-label {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .preview-box {
+            width: 200px;
+            height: 200px;
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            overflow: hidden;
+            background: #f0f0f0;
+        }
+
+        .preview-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .puzzle-area {
+            flex: 1;
+            min-width: 300px;
+            max-width: 500px;
+        }
+
+        .puzzle-grid {
+            display: grid;
+            gap: 3px;
+            background: #ddd;
+            border: 3px solid #667eea;
+            border-radius: 15px;
+            padding: 3px;
+            margin: 0 auto;
+        }
+
+        .puzzle-piece {
+            aspect-ratio: 1;
+            background-size: cover;
+            background-position: center;
+            cursor: grab;
+            border-radius: 5px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .puzzle-piece:active {
+            cursor: grabbing;
+        }
+
+        .puzzle-piece:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        .puzzle-piece.dragging {
+            opacity: 0.5;
+        }
+
+        .puzzle-piece.rotating {
+            animation: rotate 0.5s ease;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .success-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            z-index: 1000;
+            transition: transform 0.3s;
+        }
+
+        .success-message.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .success-message h2 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+
+        .success-message p {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .game-area {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .preview-box {
+                width: 150px;
+                height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼️ 逻辑拼图</h1>
+        <p class="subtitle">拖拽拼图块，完成图案！右键点击可旋转</p>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>图案类型</label>
+                <select id="categorySelect">
+                    <option value="animal">🐾 动物</option>
+                    <option value="cartoon">🎨 卡通</option>
+                    <option value="geometry">🔷 几何</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>难度等级</label>
+                <select id="difficultySelect">
+                    <option value="4">简单 (2×2)</option>
+                    <option value="9">中等 (3×3)</option>
+                    <option value="16">困难 (4×4)</option>
+                </select>
+            </div>
+
+            <button onclick="startGame()">🎮 开始游戏</button>
+            <button onclick="resetGame()">🔄 重置</button>
+            <button onclick="togglePreview()">👁️ 预览</button>
+        </div>
+
+        <div class="game-area">
+            <div class="preview-area">
+                <div class="preview-label">参考图案</div>
+                <div class="preview-box" id="previewBox">
+                    <img id="previewImage" src="" alt="预览图">
+                </div>
+            </div>
+
+            <div class="puzzle-area">
+                <div class="puzzle-grid" id="puzzleGrid"></div>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-label">移动次数</div>
+                <div class="stat-value" id="moveCount">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">用时</div>
+                <div class="stat-value" id="timeCount">00:00</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">旋转次数</div>
+                <div class="stat-value" id="rotateCount">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="success-message" id="successMessage">
+        <h2>🎉 恭喜完成！</h2>
+        <p id="successStats"></p>
+        <button onclick="startGame()">再玩一次</button>
+    </div>
+
+    <script>
+        // 图案数据库（使用SVG数据URI）
+        const patterns = {
+            animal: [
+                'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect fill="#FFD700" width="200" height="200"/><circle cx="70" cy="80" r="15" fill="#000"/><circle cx="130" cy="80" r="15" fill="#000"/><path d="M 60 120 Q 100 150 140 120" stroke="#000" stroke-width="5" fill="none"/><circle cx="40" cy="40" r="20" fill="#FFD700" stroke="#000" stroke-width="3"/><circle cx="160" cy="40" r="20" fill="#FFD700" stroke="#000" stroke-width="3"/></svg>'),
+                'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect fill="#87CEEB" width="200" height="200"/><ellipse cx="100" cy="120" rx="60" ry="40" fill="#FF69B4"/><circle cx="80" cy="100" r="10" fill="#000"/><circle cx="120" cy="100" r="10" fill="#000"/><ellipse cx="100" cy="115" rx="8" ry="5" fill="#000"/><path d="M 70 140 Q 100 150 130 140" stroke="#000" stroke-width="3" fill="none"/></svg>'),
+                'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect fill="#90EE90" width="200" height="200"/><ellipse cx="100" cy="100" rx="70" ry="50" fill="#FFA500"/><circle cx="75" cy="90" r="12" fill="#000"/><circle cx="125" cy="90" r="12" fill="#000"/><polygon points="100,100 90,110 110,110" fill="#000"/><path d="M 70 120 Q 100 135 130 120" stroke="#000" stroke-width="4" fill="none"/><ellipse cx="40" cy="70" rx="25" ry="35" fill="#FFA500"/><ellipse cx="160" cy="70" rx="25" ry="35" fill="#FFA500"/></svg>')
+            ],
+            cartoon: [
+                'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect fill="#FFE4E1" width="200" height="200"/><circle cx="100" cy="100" r="60" fill="#FFD700"/><circle cx="80" cy="90" r="8" fill="#000"/><circle cx="120" cy="90" r="8" fill="#000"/><path d="M 70 110 Q 100 130 130 110" stroke="#000" stroke-width="4" fill="none"/><line x1="50" y1="60" x2="70" y2="50" stroke="#000" stroke-width="3"/><line x1="150" y1="60" x2="130" y2="50" stroke="#000" stroke-width="3"/></svg>'),
+                'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect fill="#E6E6FA" width="200" height="200"/><rect x="60" y="60" width="80" height="80" rx="10" fill="#FF6B6B"/><circle cx="80" cy="90" r="8" fill="#FFF"/><circle cx="120" cy="90" r="8" fill="#FFF"/><circle cx="80" cy="90" r="4" fill="#000"/><circle cx="120" cy="90" r="4" fill="#000"/><rect x="85" y="110" width="30" height="15" rx="7" fill="#000"/></svg>'),
+                'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect fill="#B0E0E6" width="200" height="200"/><polygon points="100,40 140,100 100,160 60,100" fill="#FF1493"/><circle cx="85" cy="90" r="8" fill="#FFF"/><circle cx="115" cy="90" r="8" fill="#FFF"/><circle cx="85" cy="90" r="4" fill="#000"/><circle cx="115" cy="90" r="4" fill="#000"/><path d="M 80 110 L 100 120 L 120 110" stroke="#000" stroke-width="3" fill="none"/></svg>')
+            ],
+            geometry: [
+                'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect fill="#F0F8FF" width="200" height="200"/><circle cx="100" cy="100" r="70" fill="none" stroke="#FF4500" stroke-width="8"/><circle cx="100" cy="100" r="50" fill="none" stroke="#4169E1" stroke-width="6"/><circle cx="100" cy="100" r="30" fill="none" stroke="#32CD32" stroke-width="4"/><circle cx="100" cy="100" r="10" fill="#FFD700"/></svg>'),
+                'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect fill="#FFF5EE" width="200" height="200"/><rect x="50" y="50" width="100" height="100" fill="none" stroke="#FF6347" stroke-width="6"/><rect x="70" y="70" width="60" height="60" fill="none" stroke="#4682B4" stroke-width="5"/><circle cx="100" cy="100" r="20" fill="#FFD700"/></svg>'),
+                'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect fill="#F5F5DC" width="200" height="200"/><polygon points="100,30 170,170 30,170" fill="none" stroke="#FF1493" stroke-width="8"/><polygon points="100,60 145,140 55,140" fill="none" stroke="#9370DB" stroke-width="6"/><polygon points="100,90 120,110 80,110" fill="#FFD700"/></svg>')
+            ]
+        };
+
+        let currentPattern = '';
+        let gridSize = 9;
+        let pieces = [];
+        let moves = 0;
+        let rotations = 0;
+        let startTime = null;
+        let timerInterval = null;
+        let draggedElement = null;
+        let draggedIndex = null;
+
+        function startGame() {
+            const category = document.getElementById('categorySelect').value;
+            const difficulty = parseInt(document.getElementById('difficultySelect').value);
+            
+            gridSize = difficulty;
+            currentPattern = patterns[category][Math.floor(Math.random() * patterns[category].length)];
+            
+            document.getElementById('previewImage').src = currentPattern;
+            
+            initializePuzzle();
+            resetStats();
+            startTimer();
+        }
+
+        function initializePuzzle() {
+            const grid = document.getElementById('puzzleGrid');
+            const size = Math.sqrt(gridSize);
+            
+            grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+            grid.innerHTML = '';
+            
+            pieces = Array.from({length: gridSize}, (_, i) => ({
+                index: i,
+                rotation: 0
+            }));
+            
+            // 打乱拼图
+            for (let i = pieces.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [pieces[i], pieces[j]] = [pieces[j], pieces[i]];
+            }
+            
+            // 随机旋转部分拼图块
+            pieces.forEach(piece => {
+                if (Math.random() > 0.5) {
+                    piece.rotation = [0, 90, 180, 270][Math.floor(Math.random() * 4)];
+                }
+            });
+            
+            renderPuzzle();
+        }
+
+        function renderPuzzle() {
+            const grid = document.getElementById('puzzleGrid');
+            const size = Math.sqrt(gridSize);
+            grid.innerHTML = '';
+            
+            pieces.forEach((piece, currentIndex) => {
+                const div = document.createElement('div');
+                div.className = 'puzzle-piece';
+                div.draggable = true;
+                
+                const row = Math.floor(piece.index / size);
+                const col = piece.index % size;
+                const percentX = (col * 100) / (size - 1);
+                const percentY = (row * 100) / (size - 1);
+                
+                div.style.backgroundImage = `url(${currentPattern})`;
+                div.style.backgroundSize = `${size * 100}%`;
+                div.style.backgroundPosition = `${percentX}% ${percentY}%`;
+                div.style.transform = `rotate(${piece.rotation}deg)`;
+                
+                div.addEventListener('dragstart', (e) => handleDragStart(e, currentIndex));
+                div.addEventListener('dragover', handleDragOver);
+                div.addEventListener('drop', (e) => handleDrop(e, currentIndex));
+                div.addEventListener('dragend', handleDragEnd);
+                div.addEventListener('contextmenu', (e) => handleRotate(e, currentIndex));
+                
+                grid.appendChild(div);
+            });
+        }
+
+        function handleDragStart(e, index) {
+            draggedElement = e.target;
+            draggedIndex = index;
+            e.target.classList.add('dragging');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+
+        function handleDrop(e, targetIndex) {
+            e.preventDefault();
+            
+            if (draggedIndex !== null && draggedIndex !== targetIndex) {
+                [pieces[draggedIndex], pieces[targetIndex]] = [pieces[targetIndex], pieces[draggedIndex]];
+                moves++;
+                document.getElementById('moveCount').textContent = moves;
+                renderPuzzle();
+                checkWin();
+            }
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            draggedElement = null;
+            draggedIndex = null;
+        }
+
+        function handleRotate(e, index) {
+            e.preventDefault();
+            pieces[index].rotation = (pieces[index].rotation + 90) % 360;
+            rotations++;
+            document.getElementById('rotateCount').textContent = rotations;
+            renderPuzzle();
+            checkWin();
+        }
+
+        function checkWin() {
+            const isCorrect = pieces.every((piece, index) => 
+                piece.index === index && piece.rotation === 0
+            );
+            
+            if (isCorrect) {
+                stopTimer();
+                showSuccess();
+            }
+        }
+
+        function showSuccess() {
+            const time = document.getElementById('timeCount').textContent;
+            document.getElementById('successStats').textContent = 
+                `用时: ${time} | 移动: ${moves}次 | 旋转: ${rotations}次`;
+            document.getElementById('successMessage').classList.add('show');
+            
+            setTimeout(() => {
+                document.getElementById('successMessage').classList.remove('show');
+            }, 5000);
+        }
+
+        function resetGame() {
+            if (currentPattern) {
+                initializePuzzle();
+                resetStats();
+            }
+        }
+
+        function resetStats() {
+            moves = 0;
+            rotations = 0;
+            document.getElementById('moveCount').textContent = '0';
+            document.getElementById('rotateCount').textContent = '0';
+            document.getElementById('timeCount').textContent = '00:00';
+        }
+
+        function startTimer() {
+            stopTimer();
+            startTime = Date.now();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function updateTimer() {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            document.getElementById('timeCount').textContent = `${minutes}:${seconds}`;
+        }
+
+        function togglePreview() {
+            const preview = document.querySelector('.preview-area');
+            preview.style.display = preview.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // 初始化游戏
+        window.onload = () => {
+            startGame();
+        };
+    </script>
+</body>
+</html>
