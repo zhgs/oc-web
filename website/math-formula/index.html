@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>初一数学公式训练</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px}
+.container{max-width:800px;margin:0 auto}
+header{text-align:center;color:#fff;margin-bottom:24px}
+header h1{font-size:28px;margin-bottom:8px}
+header p{opacity:.85;font-size:15px}
+.back-btn{display:inline-block;color:#fff;text-decoration:none;font-size:14px;opacity:.8;margin-bottom:12px}
+.back-btn:hover{opacity:1}
+.stats-bar{display:flex;justify-content:center;gap:24px;margin-bottom:24px;flex-wrap:wrap}
+.stat{background:rgba(255,255,255,.15);backdrop-filter:blur(10px);border-radius:12px;padding:12px 20px;color:#fff;text-align:center;min-width:100px}
+.stat .num{font-size:24px;font-weight:700}
+.stat .label{font-size:12px;opacity:.8;margin-top:2px}
+.categories{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:24px}
+.cat-btn{padding:8px 16px;border-radius:20px;border:2px solid rgba(255,255,255,.4);background:transparent;color:#fff;cursor:pointer;font-size:14px;transition:all .2s}
+.cat-btn:hover,.cat-btn.active{background:#fff;color:#764ba2;border-color:#fff}
+.card{background:#fff;border-radius:16px;padding:28px;box-shadow:0 8px 32px rgba(0,0,0,.12);margin-bottom:20px}
+.formula-display{background:#f8f7ff;border-radius:12px;padding:20px;margin-bottom:20px;text-align:center;font-size:20px;line-height:1.8;border:2px dashed #e0d8ff}
+.formula-display .formula-name{font-size:14px;color:#999;margin-bottom:8px}
+.question-area{margin-bottom:20px}
+.question-text{font-size:18px;line-height:1.8;margin-bottom:16px;color:#333}
+.blank-input{display:inline-block;width:120px;border:none;border-bottom:2px solid #764ba2;background:transparent;font-size:18px;text-align:center;padding:4px 8px;outline:none;color:#764ba2;font-weight:600;transition:border-color .2s}
+.blank-input:focus{border-bottom-color:#667eea}
+.blank-input.correct{border-bottom-color:#27ae60;color:#27ae60}
+.blank-input.wrong{border-bottom-color:#e74c3c;color:#e74c3c}
+.btn-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{padding:12px 32px;border-radius:10px;border:none;font-size:16px;cursor:pointer;font-weight:600;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(102,126,234,.4)}
+.btn-secondary{background:#f0f0f0;color:#555}
+.btn-secondary:hover{background:#e0e0e0}
+.btn-hint{background:#fff3cd;color:#856404}
+.result-msg{text-align:center;padding:16px;border-radius:10px;margin-top:16px;font-size:16px;font-weight:600;display:none}
+.result-msg.show{display:block}
+.result-msg.correct{background:#d4edda;color:#155724}
+.result-msg.wrong{background:#f8d7da;color:#721c24}
+.hint-box{background:#fff3cd;border-radius:10px;padding:12px 16px;margin-top:12px;color:#856404;font-size:14px;display:none}
+.hint-box.show{display:block}
+.progress-bar{width:100%;height:6px;background:rgba(255,255,255,.2);border-radius:3px;margin-top:16px;overflow:hidden}
+.progress-fill{height:100%;background:#fff;border-radius:3px;transition:width .3s}
+.formula-ref{margin-top:20px}
+.formula-ref h3{font-size:16px;color:#764ba2;margin-bottom:12px}
+.formula-list{display:grid;gap:8px}
+.formula-item{background:#f8f7ff;border-radius:8px;padding:10px 14px;font-size:14px;color:#555;border-left:3px solid #764ba2}
+.formula-item strong{color:#333}
+.mode-toggle{display:flex;gap:0;margin-bottom:20px;background:#f0f0f0;border-radius:10px;overflow:hidden}
+.mode-btn{flex:1;padding:10px;border:none;background:transparent;cursor:pointer;font-size:14px;font-weight:600;color:#888;transition:all .2s}
+.mode-btn.active{background:#764ba2;color:#fff}
+.review-card{background:#f8f7ff;border-radius:10px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all .2s}
+.review-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.review-card h4{color:#333;margin-bottom:6px}
+.review-card p{color:#888;font-size:14px}
+.sup{font-size:.7em;vertical-align:super}
+@media(max-width:600px){
+header h1{font-size:22px}
+.card{padding:20px}
+.formula-display{font-size:17px;padding:14px}
+.question-text{font-size:16px}
+.blank-input{width:90px;font-size:16px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<a href="../index.html" class="back-btn">← 返回导航</a>
+<header>
+<h1>🗂️ 初一数学公式训练</h1>
+<p>熟能生巧，掌握公式是数学的基础</p>
+</header>
+
+<div class="stats-bar">
+<div class="stat"><div class="num" id="totalDone">0</div><div class="label">已完成</div></div>
+<div class="stat"><div class="num" id="correctRate">0%</div><div class="label">正确率</div></div>
+<div class="stat"><div class="num" id="streak">0</div><div class="label">连对</div></div>
+<div class="stat"><div class="num" id="todayCount">0</div><div class="label">今日练习</div></div>
+</div>
+
+<div class="mode-toggle">
+<button class="mode-btn active" onclick="switchMode('practice')">🎯 练习模式</button>
+<button class="mode-btn" onclick="switchMode('review')">📖 公式速查</button>
+</div>
+
+<div id="practiceMode">
+<div class="categories" id="catBtns"></div>
+<div class="card">
+<div class="formula-display">
+<div class="formula-name" id="formulaName">选择分类开始练习</div>
+<div id="formulaShow">点击上方分类按钮，开始公式训练 💪</div>
+</div>
+<div class="question-area" id="questionArea" style="display:none">
+<div class="question-text" id="questionText"></div>
+<div class="btn-row">
+<button class="btn btn-hint" onclick="showHint()">💡 提示</button>
+<button class="btn btn-primary" onclick="checkAnswer()">✅ 提交</button>
+<button class="btn btn-secondary" onclick="nextQuestion()">⏭️ 下一题</button>
+</div>
+<div class="hint-box" id="hintBox"></div>
+<div class="result-msg" id="resultMsg"></div>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+</div>
+</div>
+
+<div id="reviewMode" style="display:none">
+<div class="card">
+<div id="reviewList"></div>
+</div>
+</div>
+</div>
+
+<script>
+const FORMULAS = {
+  "有理数运算": {
+    formulas: [
+      {name:"加法交换律",formula:"a + b = b + a",questions:[
+        {q:"根据加法交换律：3 + 5 = ___ + 3",a:["5"],hint:"交换两个加数的位置，和不变"},
+        {q:"根据加法交换律：(-2) + 7 = 7 + (___)",a:["-2"],hint:"交换加数位置"},
+        {q:"a + b = ___ + a",a:["b"],hint:"交换律：交换两个加数的位置"}
+      ]},
+      {name:"加法结合律",formula:"(a + b) + c = a + (b + c)",questions:[
+        {q:"(3 + 5) + 2 = 3 + (5 + ___)",a:["2"],hint:"结合律改变运算顺序，结果不变"},
+        {q:"(a + b) + c = a + (___ + c)",a:["b"],hint:"结合律：改变加法的运算顺序"},
+        {q:"(-1 + 4) + 6 = -1 + (4 + ___)",a:["6"],hint:"结合律不改变数值，只改变括号位置"}
+      ]},
+      {name:"乘法交换律",formula:"a × b = b × a",questions:[
+        {q:"3 × 7 = 7 × ___",a:["3"],hint:"交换两个因数的位置，积不变"},
+        {q:"(-4) × 5 = 5 × (___)",a:["-4"],hint:"乘法交换律对负数同样适用"},
+        {q:"a × b = ___ × a",a:["b"],hint:"交换因数位置"}
+      ]},
+      {name:"乘法分配律",formula:"a × (b + c) = a × b + a × c",questions:[
+        {q:"3 × (4 + 5) = 3 × 4 + 3 × ___",a:["5"],hint:"分配律：a乘以括号内每一项"},
+        {q:"5 × (x + 2) = 5x + ___",a:["10"],hint:"5 × 2 = ?"},
+        {q:"a × (b + c) = a × b + ___ × c",a:["a"],hint:"a分别乘以b和c"}
+      ]},
+      {name:"负数乘法法则",formula:"负负得正，正负得负",questions:[
+        {q:"(-3) × (-4) = ___",a:["12"],hint:"负负得正"},
+        {q:"(-5) × 3 = ___",a:["-15"],hint:"正负得负（异号得负）"},
+        {q:"(-2) × (-2) × (-2) = ___",a:["-8"],hint:"三个负数相乘，结果为负"}
+      ]}
+    ]
+  },
+  "绝对值与相反数": {
+    formulas: [
+      {name:"绝对值定义",formula:"|a| = a (a≥0)，|a| = -a (a<0)",questions:[
+        {q:"|5| = ___",a:["5"],hint:"正数的绝对值等于它本身"},
+        {q:"|-3| = ___",a:["3"],hint:"负数的绝对值等于它的相反数"},
+        {q:"|0| = ___",a:["0"],hint:"0的绝对值是0"}
+      ]},
+      {name:"相反数",formula:"a 的相反数是 -a，互为相反数的两数之和为0",questions:[
+        {q:"5 的相反数是 ___",a:["-5"],hint:"正数的相反数是对应的负数"},
+        {q:"-3 的相反数是 ___",a:["3"],hint:"负数的相反数是对应的正数"},
+        {q:"a + (-a) = ___",a:["0"],hint:"互为相反数的两数之和为0"}
+      ]},
+      {name:"绝对值性质",formula:"|a| ≥ 0，|a| = |-a|",questions:[
+        {q:"|-7| = |___| ",a:["7"],hint:"|a| = |-a|，绝对值相等"},
+        {q:"如果 |x| = 4，则 x = 4 或 x = ___",a:["-4"],hint:"绝对值为4的数有两个"},
+        {q:"|a| 的值一定 ___ 0（填≥或≤）",a:["≥",">="],hint:"绝对值永远非负"}
+      ]}
+    ]
+  },
+  "乘方运算": {
+    formulas: [
+      {name:"乘方定义",formula:"aⁿ = a × a × ... × a（n个a相乘）",questions:[
+        {q:"2³ = ___",a:["8"],hint:"2 × 2 × 2 = ?"},
+        {q:"3² = ___",a:["9"],hint:"3 × 3 = ?"},
+        {q:"(-2)² = ___",a:["4"],hint:"(-2) × (-2) = ? 负负得正"}
+      ]},
+      {name:"负数的乘方",formula:"(-a)²ⁿ = a²ⁿ（偶数次幂为正），(-a)²ⁿ⁺¹ = -a²ⁿ⁺¹（奇数次幂为负）",questions:[
+        {q:"(-1)⁴ = ___",a:["1"],hint:"偶数次幂，负负得正"},
+        {q:"(-1)³ = ___",a:["-1"],hint:"奇数次幂，结果为负"},
+        {q:"(-3)² = ___",a:["9"],hint:"(-3) × (-3) = 9，偶数次幂为正"}
+      ]},
+      {name:"同底数幂相乘",formula:"aᵐ × aⁿ = aᵐ⁺ⁿ",questions:[
+        {q:"2³ × 2² = 2 的 ___ 次方",a:["5"],hint:"底数不变，指数相加：3+2"},
+        {q:"a⁴ × a³ = a 的 ___ 次方",a:["7"],hint:"指数相加：4+3"},
+        {q:"x² × x = x 的 ___ 次方",a:["3"],hint:"x = x¹，所以 2+1"}
+      ]},
+      {name:"幂的乘方",formula:"(aᵐ)ⁿ = aᵐⁿ",questions:[
+        {q:"(2³)² = 2 的 ___ 次方",a:["6"],hint:"指数相乘：3×2"},
+        {q:"(a²)⁴ = a 的 ___ 次方",a:["8"],hint:"指数相乘：2×4"},
+        {q:"(x³)³ = x 的 ___ 次方",a:["9"],hint:"指数相乘：3×3"}
+      ]}
+    ]
+  },
+  "整式运算": {
+    formulas: [
+      {name:"合并同类项",formula:"同类项：字母及其指数相同的项可以合并",questions:[
+        {q:"3x + 5x = ___x",a:["8"],hint:"系数相加：3+5"},
+        {q:"7a² - 3a² = ___a²",a:["4"],hint:"系数相减：7-3"},
+        {q:"2xy + 5xy - xy = ___xy",a:["6"],hint:"2+5-1 = ?"}
+      ]},
+      {name:"去括号法则",formula:"+(a+b) = a+b，-(a+b) = -a-b",questions:[
+        {q:"-(3x + 2) = ___x + (___)",a:["-3","-2"],hint:"括号前是负号，每项变号"},
+        {q:"+(2a - 5) = 2a + (___)",a:["-5"],hint:"括号前是正号，各项不变"},
+        {q:"-(- x + 4) = x + (___)",a:["-4"],hint:"去括号变号：-(-x)=x，-(4)=-4"}
+      ]},
+      {name:"单项式乘法",formula:"单项式相乘：系数相乘，同底数幂指数相加",questions:[
+        {q:"2x × 3x = ___x²",a:["6"],hint:"系数：2×3=6，x×x=x²"},
+        {q:"(-3a²) × 2a = ___a³",a:["-6"],hint:"系数：-3×2=-6，a²×a=a³"},
+        {q:"4xy × (-2x) = ___x²y",a:["-8"],hint:"系数：4×(-2)=-8"}
+      ]}
+    ]
+  },
+  "一元一次方程": {
+    formulas: [
+      {name:"方程基本形式",formula:"ax + b = 0 → x = -b/a (a≠0)",questions:[
+        {q:"2x + 6 = 0，则 x = ___",a:["-3"],hint:"x = -6/2 = -3"},
+        {q:"3x - 9 = 0，则 x = ___",a:["3"],hint:"x = 9/3 = 3"},
+        {q:"-5x + 10 = 0，则 x = ___",a:["2"],hint:"x = -10/(-5) = 2"}
+      ]},
+      {name:"等式性质1",formula:"等式两边同时加（或减）同一个数，等式仍成立",questions:[
+        {q:"x - 5 = 3，两边加5得 x = ___",a:["8"],hint:"3 + 5 = 8"},
+        {q:"x + 7 = 10，两边减7得 x = ___",a:["3"],hint:"10 - 7 = 3"},
+        {q:"移项要 ___号（填"变"或"不变"）",a:["变"],hint:"移项必须变号"}
+      ]},
+      {name:"等式性质2",formula:"等式两边同时乘（或除以）同一个非零数，等式仍成立",questions:[
+        {q:"x/3 = 4，两边乘3得 x = ___",a:["12"],hint:"4 × 3 = 12"},
+        {q:"2x = 10，两边除以2得 x = ___",a:["5"],hint:"10 ÷ 2 = 5"},
+        {q:"-4x = 20，则 x = ___",a:["-5"],hint:"20 ÷ (-4) = -5"}
+      ]}
+    ]
+  },
+  "几何公式": {
+    formulas: [
+      {name:"三角形面积",formula:"S = ½ × 底 × 高 = ½ah",questions:[
+        {q:"底=6，高=4，三角形面积 = ___",a:["12"],hint:"½ × 6 × 4 = 12"},
+        {q:"底=10，高=3，三角形面积 = ___",a:["15"],hint:"½ × 10 × 3 = 15"},
+        {q:"面积=20，底=8，则高 = ___",a:["5"],hint:"20 = ½ × 8 × h → h = 5"}
+      ]},
+      {name:"平行四边形面积",formula:"S = 底 × 高 = ah",questions:[
+        {q:"底=7，高=5，平行四边形面积 = ___",a:["35"],hint:"7 × 5 = 35"},
+        {q:"面积=24，底=6，则高 = ___",a:["4"],hint:"24 ÷ 6 = 4"},
+        {q:"底=9，高=3，面积 = ___",a:["27"],hint:"9 × 3 = 27"}
+      ]},
+      {name:"梯形面积",formula:"S = ½ × (上底 + 下底) × 高",questions:[
+        {q:"上底=3，下底=5，高=4，梯形面积 = ___",a:["16"],hint:"½ × (3+5) × 4 = 16"},
+        {q:"上底=2，下底=6，高=3，面积 = ___",a:["12"],hint:"½ × (2+6) × 3 = 12"},
+        {q:"面积=20，上底=3，下底=5，则高 = ___",a:["5"],hint:"20 = ½ × 8 × h → h = 5"}
+      ]},
+      {name:"圆的周长与面积",formula:"周长 C = 2πr，面积 S = πr²",questions:[
+        {q:"半径=3，圆的面积 = ___π",a:["9"],hint:"πr² = π × 3² = 9π"},
+        {q:"半径=5，圆的周长 = ___π",a:["10"],hint:"2πr = 2π × 5 = 10π"},
+        {q:"直径=8，半径 = ___，面积 = ___π",a:["4","16"],hint:"r=d/2=4，S=π×4²=16π"}
+      ]},
+      {name:"互余与互补",formula:"互余：∠A + ∠B = 90°，互补：∠A + ∠B = 180°",questions:[
+        {q:"∠A = 35°，其余角 = ___°",a:["55"],hint:"90° - 35° = 55°"},
+        {q:"∠A = 70°，其补角 = ___°",a:["110"],hint:"180° - 70° = 110°"},
+        {q:"两角互余且相等，则每个角 = ___°",a:["45"],hint:"90° ÷ 2 = 45°"}
+      ]}
+    ]
+  }
+};
+
+let currentCat = null, currentFormula = null, currentQ = null, currentQIdx = 0;
+let stats = JSON.parse(localStorage.getItem('mathFormulaStats') || '{"total":0,"correct":0,"streak":0,"maxStreak":0,"today":"","todayCount":0}');
+const today = new Date().toISOString().slice(0,10);
+if(stats.today !== today){stats.today=today;stats.todayCount=0;}
+
+function updateStats(){
+  document.getElementById('totalDone').textContent = stats.total;
+  document.getElementById('correctRate').textContent = stats.total ? Math.round(stats.correct/stats.total*100)+'%' : '0%';
+  document.getElementById('streak').textContent = stats.streak;
+  document.getElementById('todayCount').textContent = stats.todayCount;
+  localStorage.setItem('mathFormulaStats', JSON.stringify(stats));
+}
+
+function initCategories(){
+  const c = document.getElementById('catBtns');
+  Object.keys(FORMULAS).forEach((cat,i) => {
+    const b = document.createElement('button');
+    b.className = 'cat-btn';
+    b.textContent = cat;
+    b.onclick = () => selectCategory(cat);
+    c.appendChild(b);
+  });
+}
+
+function selectCategory(cat){
+  currentCat = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.textContent===cat));
+  const formulas = FORMULAS[cat].formulas;
+  currentFormula = formulas[Math.floor(Math.random()*formulas.length)];
+  currentQIdx = Math.floor(Math.random()*currentFormula.questions.length);
+  showQuestion();
+}
+
+function showQuestion(){
+  const q = currentFormula.questions[currentQIdx];
+  currentQ = q;
+  document.getElementById('formulaName').textContent = currentFormula.name;
+  document.getElementById('formulaShow').textContent = currentFormula.formula;
+  document.getElementById('questionArea').style.display = 'block';
+  
+  let html = q.q;
+  let idx = 0;
+  html = html.replace(/___/g, () => {
+    return '<input type="text" class="blank-input" data-idx="'+(idx++)+'" autocomplete="off">';
+  });
+  document.getElementById('questionText').innerHTML = html;
+  document.getElementById('resultMsg').className = 'result-msg';
+  document.getElementById('resultMsg').style.display = 'none';
+  document.getElementById('hintBox').className = 'hint-box';
+  document.getElementById('hintBox').style.display = 'none';
+  
+  const totalQ = Object.values(FORMULAS).reduce((s,c) => s + c.formulas.reduce((s2,f) => s2+f.questions.length,0),0);
+  document.getElementById('progressFill').style.width = Math.min(100, stats.todayCount/totalQ*100)+'%';
+  
+  setTimeout(() => {const inp = document.querySelector('.blank-input'); if(inp) inp.focus();}, 100);
+  
+  document.querySelectorAll('.blank-input').forEach(inp => {
+    inp.addEventListener('keydown', e => { if(e.key==='Enter') checkAnswer(); });
+  });
+}
+
+function checkAnswer(){
+  const inputs = document.querySelectorAll('.blank-input');
+  const answers = currentQ.a;
+  let allCorrect = true;
+  
+  inputs.forEach((inp, i) => {
+    const userAns = inp.value.trim();
+    const correctAns = answers[i] || answers[0];
+    const isArr = Array.isArray(correctAns) ? correctAns : [correctAns];
+    if(isArr.some(a => userAns === a)){
+      inp.classList.add('correct');
+      inp.classList.remove('wrong');
+    } else {
+      inp.classList.add('wrong');
+      inp.classList.remove('correct');
+      allCorrect = false;
+    }
+  });
+  
+  const msg = document.getElementById('resultMsg');
+  stats.total++;
+  stats.todayCount++;
+  
+  if(allCorrect){
+    stats.correct++;
+    stats.streak++;
+    if(stats.streak > stats.maxStreak) stats.maxStreak = stats.streak;
+    msg.textContent = ['🎉 完全正确！','✨ 太棒了！','👏 答对了！','💯 漂亮！'][Math.floor(Math.random()*4)];
+    if(stats.streak >= 5) msg.textContent += ' 🔥 连对'+stats.streak+'题！';
+    msg.className = 'result-msg show correct';
+  } else {
+    stats.streak = 0;
+    msg.textContent = '❌ 再想想，正确答案是：' + answers.join('，');
+    msg.className = 'result-msg show wrong';
+  }
+  msg.style.display = 'block';
+  updateStats();
+}
+
+function showHint(){
+  const h = document.getElementById('hintBox');
+  h.textContent = '💡 ' + currentQ.hint;
+  h.className = 'hint-box show';
+  h.style.display = 'block';
+}
+
+function nextQuestion(){
+  const formulas = FORMULAS[currentCat].formulas;
+  currentFormula = formulas[Math.floor(Math.random()*formulas.length)];
+  currentQIdx = Math.floor(Math.random()*currentFormula.questions.length);
+  showQuestion();
+}
+
+function switchMode(mode){
+  document.querySelectorAll('.mode-btn').forEach((b,i) => b.classList.toggle('active', (i===0&&mode==='practice')||(i===1&&mode==='review')));
+  document.getElementById('practiceMode').style.display = mode==='practice'?'block':'none';
+  document.getElementById('reviewMode').style.display = mode==='review'?'block':'none';
+  if(mode==='review') renderReview();
+}
+
+function renderReview(){
+  let html = '';
+  Object.entries(FORMULAS).forEach(([cat, data]) => {
+    html += '<h3 style="color:#764ba2;margin:16px 0 10px;font-size:18px;">'+cat+'</h3>';
+    data.formulas.forEach(f => {
+      html += '<div class="review-card"><h4>'+f.name+'</h4><p style="font-size:16px;color:#333;margin-top:4px;">'+f.formula+'</p></div>';
+    });
+  });
+  document.getElementById('reviewList').innerHTML = html;
+}
+
+initCategories();
+updateStats();
+</script>
+</body>
+</html>
