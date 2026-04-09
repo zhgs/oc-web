@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分步流程图绘制 - 训练逻辑思维</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .toolbox {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            width: 250px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .toolbox h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .tool-item {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            cursor: move;
+            text-align: center;
+            font-weight: bold;
+            transition: transform 0.2s;
+            user-select: none;
+        }
+
+        .tool-item:hover {
+            transform: scale(1.05);
+        }
+
+        .tool-item.start { background: linear-gradient(135deg, #11998e, #38ef7d); }
+        .tool-item.process { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .tool-item.decision { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .tool-item.end { background: linear-gradient(135deg, #fa709a, #fee140); }
+
+        .canvas-area {
+            flex: 1;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 600px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .canvas {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            min-height: 560px;
+        }
+
+        .flow-node {
+            position: absolute;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            cursor: move;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            min-width: 120px;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .flow-node.start {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            border-radius: 25px;
+        }
+
+        .flow-node.process {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .flow-node.decision {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            transform: rotate(45deg);
+        }
+
+        .flow-node.decision .node-text {
+            transform: rotate(-45deg);
+        }
+
+        .flow-node.end {
+            background: linear-gradient(135deg, #fa709a, #fee140);
+            border-radius: 25px;
+        }
+
+        .flow-node input {
+            background: rgba(255,255,255,0.3);
+            border: none;
+            color: white;
+            text-align: center;
+            padding: 5px;
+            border-radius: 5px;
+            font-weight: bold;
+            width: 100%;
+        }
+
+        .flow-node input::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            display: none;
+        }
+
+        .flow-node:hover .delete-btn {
+            display: block;
+        }
+
+        .controls {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+        }
+
+        .btn-clear {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+        }
+
+        .btn-export {
+            background: linear-gradient(135deg, #43e97b, #38f9d7);
+        }
+
+        .btn-back {
+            background: linear-gradient(135deg, #fa8bff, #2bd2ff);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .instructions {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .instructions h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .instructions ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .instructions li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .instructions li:before {
+            content: "➡️";
+            position: absolute;
+            left: 0;
+        }
+
+        svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .toolbox {
+                width: 100%;
+            }
+
+            header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>➡️ 分步流程图绘制</h1>
+            <p>拖拽制作步骤图，训练流程思维与结构化逻辑</p>
+        </header>
+
+        <div class="main-content">
+            <div class="toolbox">
+                <h3>📦 工具箱</h3>
+                <div class="tool-item start" draggable="true" data-type="start">
+                    🟢 开始
+                </div>
+                <div class="tool-item process" draggable="true" data-type="process">
+                    📋 步骤
+                </div>
+                <div class="tool-item decision" draggable="true" data-type="decision">
+                    ❓ 判断
+                </div>
+                <div class="tool-item end" draggable="true" data-type="end">
+                    🔴 结束
+                </div>
+            </div>
+
+            <div class="canvas-area">
+                <svg id="connections"></svg>
+                <div class="canvas" id="canvas"></div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-clear" onclick="clearCanvas()">🗑️ 清空画布</button>
+            <button class="btn btn-save" onclick="saveFlowchart()">💾 保存流程图</button>
+            <button class="btn btn-export" onclick="exportImage()">📸 导出图片</button>
+            <button class="btn btn-back" onclick="goBack()">🏠 返回首页</button>
+        </div>
+
+        <div class="instructions">
+            <h3>📖 使用说明</h3>
+            <ul>
+                <li>从左侧工具箱拖拽元素到画布上</li>
+                <li>点击元素可以编辑文字内容</li>
+                <li>拖动元素可以调整位置</li>
+                <li>鼠标悬停在元素上可以删除</li>
+                <li>使用"保存流程图"可以保存到本地</li>
+                <li>使用"导出图片"可以下载为图片</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let nodeCounter = 0;
+        let nodes = [];
+
+        // 工具箱拖拽
+        document.querySelectorAll('.tool-item').forEach(item => {
+            item.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('type', e.target.dataset.type);
+            });
+        });
+
+        // 画布接收
+        const canvas = document.getElementById('canvas');
+        canvas.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        canvas.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const type = e.dataTransfer.getData('type');
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left - 60;
+            const y = e.clientY - rect.top - 25;
+            createNode(type, x, y);
+        });
+
+        function createNode(type, x, y, text = '') {
+            const node = document.createElement('div');
+            node.className = `flow-node ${type}`;
+            node.style.left = x + 'px';
+            node.style.top = y + 'px';
+            node.dataset.id = nodeCounter++;
+
+            const defaultText = {
+                'start': '开始',
+                'process': '步骤',
+                'decision': '判断?',
+                'end': '结束'
+            };
+
+            node.innerHTML = `
+                <div class="node-text">
+                    <input type="text" value="${text || defaultText[type]}" placeholder="输入内容">
+                </div>
+                <button class="delete-btn" onclick="deleteNode(this)">×</button>
+            `;
+
+            // 拖动节点
+            let isDragging = false;
+            let startX, startY, initialX, initialY;
+
+            node.addEventListener('mousedown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                initialX = node.offsetLeft;
+                initialY = node.offsetTop;
+                node.style.cursor = 'grabbing';
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                node.style.left = (initialX + dx) + 'px';
+                node.style.top = (initialY + dy) + 'px';
+                drawConnections();
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    node.style.cursor = 'move';
+                }
+            });
+
+            canvas.appendChild(node);
+            nodes.push(node);
+            drawConnections();
+        }
+
+        function deleteNode(btn) {
+            const node = btn.parentElement;
+            nodes = nodes.filter(n => n !== node);
+            node.remove();
+            drawConnections();
+        }
+
+        function drawConnections() {
+            const svg = document.getElementById('connections');
+            svg.innerHTML = '';
+
+            for (let i = 0; i < nodes.length - 1; i++) {
+                const node1 = nodes[i];
+                const node2 = nodes[i + 1];
+
+                const x1 = node1.offsetLeft + node1.offsetWidth / 2;
+                const y1 = node1.offsetTop + node1.offsetHeight / 2;
+                const x2 = node2.offsetLeft + node2.offsetWidth / 2;
+                const y2 = node2.offsetTop + node2.offsetHeight / 2;
+
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x1);
+                line.setAttribute('y1', y1);
+                line.setAttribute('x2', x2);
+                line.setAttribute('y2', y2);
+                line.setAttribute('stroke', '#667eea');
+                line.setAttribute('stroke-width', '3');
+                line.setAttribute('marker-end', 'url(#arrowhead)');
+
+                svg.appendChild(line);
+            }
+
+            // 添加箭头标记
+            if (nodes.length > 1 && !document.getElementById('arrowhead')) {
+                const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+                marker.setAttribute('id', 'arrowhead');
+                marker.setAttribute('markerWidth', '10');
+                marker.setAttribute('markerHeight', '10');
+                marker.setAttribute('refX', '9');
+                marker.setAttribute('refY', '3');
+                marker.setAttribute('orient', 'auto');
+                const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                polygon.setAttribute('points', '0 0, 10 3, 0 6');
+                polygon.setAttribute('fill', '#667eea');
+                marker.appendChild(polygon);
+                defs.appendChild(marker);
+                svg.appendChild(defs);
+            }
+        }
+
+        function clearCanvas() {
+            if (confirm('确定要清空画布吗？')) {
+                canvas.innerHTML = '<svg id="connections"></svg>';
+                nodes = [];
+                nodeCounter = 0;
+            }
+        }
+
+        function saveFlowchart() {
+            const data = nodes.map(node => ({
+                type: node.classList[1],
+                x: node.offsetLeft,
+                y: node.offsetTop,
+                text: node.querySelector('input').value
+            }));
+
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '流程图_' + new Date().getTime() + '.json';
+            a.click();
+            alert('✅ 流程图已保存！');
+        }
+
+        function exportImage() {
+            alert('📸 导出图片功能：请使用截图工具截取画布区域，或按 Ctrl+Shift+S (Windows) / Cmd+Shift+4 (Mac) 截图保存。');
+        }
+
+        function goBack() {
+            window.location.href = '../index.html';
+        }
+
+        // 加载示例
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                createNode('start', 50, 50);
+                createNode('process', 50, 150, '准备材料');
+                createNode('decision', 50, 250, '材料齐全?');
+                createNode('process', 50, 350, '开始制作');
+                createNode('end', 50, 450);
+            }, 500);
+        });
+    </script>
+</body>
+</html>
