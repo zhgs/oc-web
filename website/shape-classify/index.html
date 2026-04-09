@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图形分类训练器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 20px 0;
+            color: #fff;
+        }
+        header h1 { font-size: 1.8em; margin-bottom: 6px; }
+        header p { opacity: 0.85; font-size: 0.95em; }
+        .back-link {
+            display: inline-block;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+        .back-link:hover { color: #fff; }
+
+        /* 顶部信息栏 */
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            padding: 12px 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .info-bar .stat {
+            font-size: 0.95em;
+            font-weight: 600;
+        }
+        .info-bar .stat span { color: #764ba2; }
+        .level-select {
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 2px solid #764ba2;
+            font-size: 0.9em;
+            color: #764ba2;
+            background: #fff;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* 任务区 */
+        .task-area {
+            background: rgba(255,255,255,0.95);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .task-title {
+            font-size: 1.1em;
+            color: #555;
+            margin-bottom: 6px;
+        }
+        .task-rule {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #764ba2;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: #f0e6ff;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        /* 图形展示区 */
+        .shapes-area {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 10px;
+            min-height: 120px;
+        }
+        .shape-item {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            transition: transform 0.15s, box-shadow 0.15s;
+            position: relative;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.6);
+            border: 2px solid transparent;
+        }
+        .shape-item:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .shape-item.selected {
+            border-color: #764ba2;
+            background: #f0e6ff;
+            transform: scale(1.08);
+        }
+        .shape-item.correct {
+            border-color: #4caf50;
+            background: #e8f5e9;
+            animation: correctPulse 0.4s;
+        }
+        .shape-item.wrong {
+            border-color: #f44336;
+            background: #ffebee;
+            animation: shake 0.4s;
+        }
+        @keyframes correctPulse {
+            0%,100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+
+        /* 分类篮子 */
+        .baskets-area {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 20px;
+        }
+        .basket {
+            min-width: 130px;
+            padding: 16px 20px;
+            border-radius: 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            font-weight: 700;
+            font-size: 1em;
+            border: 3px dashed #bbb;
+            background: #fafafa;
+            color: #555;
+        }
+        .basket:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+        .basket .basket-icon { font-size: 1.8em; display: block; margin-bottom: 4px; }
+        .basket .basket-count {
+            font-size: 0.8em;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        /* 结果反馈 */
+        .feedback {
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: 700;
+            min-height: 40px;
+            line-height: 40px;
+            margin-top: 10px;
+        }
+        .feedback.success { color: #4caf50; }
+        .feedback.error { color: #f44336; }
+
+        /* 按钮 */
+        .btn-row {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .btn {
+            padding: 10px 28px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn-primary { background: #764ba2; color: #fff; }
+        .btn-primary:hover { background: #5e3a82; }
+        .btn-secondary { background: #e0e0e0; color: #555; }
+        .btn-secondary:hover { background: #ccc; }
+
+        /* 完成弹窗 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-box {
+            background: #fff;
+            border-radius: 20px;
+            padding: 36px;
+            text-align: center;
+            max-width: 360px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .modal-box .big-emoji { font-size: 3em; }
+        .modal-box h2 { margin: 12px 0 8px; color: #764ba2; }
+        .modal-box p { color: #666; margin-bottom: 20px; }
+
+        /* SVG图形 */
+        .shape-svg { width: 50px; height: 50px; }
+
+        /* 响应式 */
+        @media (max-width: 500px) {
+            .shape-item { width: 65px; height: 65px; }
+            .shape-svg { width: 40px; height: 40px; }
+            .basket { min-width: 100px; padding: 12px 14px; font-size: 0.9em; }
+            .task-rule { font-size: 1.1em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="../index.html" class="back-link">← 返回导航</a>
+            <h1>🟡 图形分类训练器</h1>
+            <p>按规则把图形放进正确的篮子里</p>
+        </header>
+
+        <div class="info-bar">
+            <div class="stat">第 <span id="roundNum">1</span> / <span id="totalRounds">8</span> 题</div>
+            <div class="stat">✅ <span id="correctCount">0</span> 正确</div>
+            <div class="stat">❌ <span id="wrongCount">0</span> 错误</div>
+            <select class="level-select" id="levelSelect" aria-label="选择难度">
+                <option value="easy">🌱 简单</option>
+                <option value="medium">🌿 中等</option>
+                <option value="hard">🌳 困难</option>
+            </select>
+        </div>
+
+        <div class="task-area">
+            <div class="task-title">分类规则：</div>
+            <div class="task-rule" id="taskRule">按形状分类</div>
+
+            <div class="shapes-area" id="shapesArea"></div>
+
+            <div class="baskets-area" id="basketsArea"></div>
+
+            <div class="feedback" id="feedback"></div>
+
+            <div class="btn-row">
+                <button class="btn btn-secondary" onclick="skipRound()">跳过 ⏭️</button>
+                <button class="btn btn-primary" onclick="startGame()">重新开始 🔄</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 完成弹窗 -->
+    <div class="modal-overlay" id="doneModal">
+        <div class="modal-box">
+            <div class="big-emoji" id="doneEmoji">🎉</div>
+            <h2 id="doneTitle">太棒了！</h2>
+            <p id="doneMsg">你完成了所有题目</p>
+            <button class="btn btn-primary" onclick="closeDone(); startGame();">再来一轮 🔄</button>
+        </div>
+    </div>
+
+    <script>
+    // ========== 配置 ==========
+    const SHAPES = ['circle', 'square', 'triangle', 'star', 'diamond', 'hexagon'];
+    const COLORS = ['#f44336', '#2196f3', '#4caf50', '#ff9800', '#9c27b0', '#00bcd4'];
+    const COLOR_NAMES = { '#f44336':'红色', '#2196f3':'蓝色', '#4caf50':'绿色', '#ff9800':'橙色', '#9c27b0':'紫色', '#00bcd4':'青色' };
+    const SHAPE_NAMES = { circle:'圆形', square:'正方形', triangle:'三角形', star:'五角星', diamond:'菱形', hexagon:'六边形' };
+    const SIZES = ['small', 'medium', 'large'];
+    const SIZE_NAMES = { small:'小', medium:'中', large:'大' };
+    const SIZE_PX = { small: 30, medium: 42, large: 56 };
+
+    const LEVELS = {
+        easy:   { rounds: 6, shapesPerRound: 4, ruleTypes: ['shape','color'], basketCount: 2 },
+        medium: { rounds: 8, shapesPerRound: 6, ruleTypes: ['shape','color','size'], basketCount: 3 },
+        hard:   { rounds: 10, shapesPerRound: 8, ruleTypes: ['shape','color','size','combo'], basketCount: 3 }
+    };
+
+    let level, config, round, correct, wrong, currentRule, items, baskets, classified;
+
+    // ========== 图形SVG生成 ==========
+    function shapeSVG(shape, color, size) {
+        const s = SIZE_PX[size];
+        const half = s / 2;
+        let inner = '';
+        switch(shape) {
+            case 'circle':
+                inner = `<circle cx="${half}" cy="${half}" r="${half-2}" fill="${color}"/>`;
+                break;
+            case 'square':
+                inner = `<rect x="2" y="2" width="${s-4}" height="${s-4}" rx="3" fill="${color}"/>`;
+                break;
+            case 'triangle':
+                inner = `<polygon points="${half},2 ${s-2},${s-2} 2,${s-2}" fill="${color}"/>`;
+                break;
+            case 'star': {
+                let pts = [];
+                for(let i=0;i<5;i++){
+                    let aOuter = (i*72-90)*Math.PI/180;
+                    let aInner = ((i*72+36)-90)*Math.PI/180;
+                    pts.push(`${half+half*0.9*Math.cos(aOuter)},${half+half*0.9*Math.sin(aOuter)}`);
+                    pts.push(`${half+half*0.38*Math.cos(aInner)},${half+half*0.38*Math.sin(aInner)}`);
+                }
+                inner = `<polygon points="${pts.join(' ')}" fill="${color}"/>`;
+                break;
+            }
+            case 'diamond':
+                inner = `<polygon points="${half},2 ${s-2},${half} ${half},${s-2} 2,${half}" fill="${color}"/>`;
+                break;
+            case 'hexagon': {
+                let pts = [];
+                for(let i=0;i<6;i++){
+                    let a = (i*60-90)*Math.PI/180;
+                    pts.push(`${half+half*0.88*Math.cos(a)},${half+half*0.88*Math.sin(a)}`);
+                }
+                inner = `<polygon points="${pts.join(' ')}" fill="${color}"/>`;
+                break;
+            }
+        }
+        return `<svg class="shape-svg" viewBox="0 0 ${s} ${s}" width="${s}" height="${s}" role="img" aria-label="${SIZE_NAMES[size]}${COLOR_NAMES[color]}${SHAPE_NAMES[shape]}">${inner}</svg>`;
+    }
+
+    // ========== 工具函数 ==========
+    function pick(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+    function pickN(arr, n) {
+        let a = [...arr]; 
+        for(let i=a.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]; }
+        return a.slice(0, n);
+    }
+    function shuffle(arr) { for(let i=arr.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+
+    // ========== 生成题目 ==========
+    function generateRound() {
+        const ruleType = pick(config.ruleTypes);
+        let ruleKey, ruleLabel, basketDefs = [];
+
+        if (ruleType === 'shape') {
+            ruleKey = 'shape';
+            ruleLabel = '按形状分类';
+            const chosen = pickN(SHAPES, config.basketCount);
+            basketDefs = chosen.map(s => ({ key: s, label: SHAPE_NAMES[s], icon: shapeSVG(s, '#764ba2', 'medium') }));
+        } else if (ruleType === 'color') {
+            ruleKey = 'color';
+            ruleLabel = '按颜色分类';
+            const chosen = pickN(COLORS, config.basketCount);
+            basketDefs = chosen.map(c => ({ key: c, label: COLOR_NAMES[c], icon: `<span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:${c}"></span>` }));
+        } else if (ruleType === 'size') {
+            ruleKey = 'size';
+            ruleLabel = '按大小分类';
+            const chosen = pickN(SIZES, config.basketCount);
+            basketDefs = chosen.map(s => ({ key: s, label: SIZE_NAMES[s], icon: '' }));
+        } else {
+            // combo: 两个属性组合
+            const combos = [['shape','color'],['shape','size'],['color','size']];
+            const [a, b] = pick(combos);
+            ruleKey = 'combo';
+            ruleLabel = `按${a==='shape'?'形状':a==='color'?'颜色':'大小'}+${b==='shape'?'形状':b==='color'?'颜色':'大小'}分类`;
+            // 生成2-3个组合篮子
+            let comboPairs = [];
+            const aVals = a==='shape'?SHAPES:a==='color'?COLORS:SIZES;
+            const bVals = b==='shape'?SHAPES:b==='color'?COLORS:SIZES;
+            for(let i=0;i<config.basketCount;i++){
+                comboPairs.push({ a: pick(aVals), b: pick(bVals) });
+            }
+            basketDefs = comboPairs.map(p => {
+                const aName = a==='shape'?SHAPE_NAMES[p.a]:a==='color'?COLOR_NAMES[p.a]:SIZE_NAMES[p.a];
+                const bName = b==='shape'?SHAPE_NAMES[p.b]:b==='color'?COLOR_NAMES[p.b]:SIZE_NAMES[p.b];
+                return { key: JSON.stringify(p), label: `${aName} ${bName}`, icon: '', comboA: a, comboB: b, a: p.a, b: p.b };
+            });
+        }
+
+        // 生成图形，确保每个篮子至少有1个
+        let shapes = [];
+        const validKeys = basketDefs.map(b => b.key);
+
+        // 每个篮子先放一个
+        basketDefs.forEach(bd => {
+            shapes.push(makeShapeForBasket(bd, ruleKey, ruleType));
+        });
+
+        // 补齐剩余
+        while (shapes.length < config.shapesPerRound) {
+            const bd = pick(basketDefs);
+            shapes.push(makeShapeForBasket(bd, ruleKey, ruleType));
+        }
+
+        return { ruleType, ruleKey, ruleLabel, basketDefs, items: shuffle(shapes) };
+    }
+
+    function makeShapeForBasket(bd, ruleKey, ruleType) {
+        let shape = pick(SHAPES), color = pick(COLORS), size = pick(SIZES);
+        if (ruleType === 'combo') {
+            if (bd.comboA === 'shape') shape = bd.a; else if (bd.comboA === 'color') color = bd.a; else size = bd.a;
+            if (bd.comboB === 'shape') shape = bd.b; else if (bd.comboB === 'color') color = bd.b; else size = bd.b;
+            return { shape, color, size, correctKey: bd.key };
+        }
+        if (ruleKey === 'shape') shape = bd.key;
+        else if (ruleKey === 'color') color = bd.key;
+        else if (ruleKey === 'size') size = bd.key;
+        return { shape, color, size, correctKey: bd.key };
+    }
+
+    // ========== 渲染 ==========
+    let selectedIdx = null;
+
+    function render() {
+        const shapesArea = document.getElementById('shapesArea');
+        const basketsArea = document.getElementById('basketsArea');
+        document.getElementById('taskRule').textContent = currentRule.ruleLabel;
+        document.getElementById('roundNum').textContent = round;
+        document.getElementById('totalRounds').textContent = config.rounds;
+        document.getElementById('correctCount').textContent = correct;
+        document.getElementById('wrongCount').textContent = wrong;
+
+        // 渲染未分类的图形
+        shapesArea.innerHTML = '';
+        items.forEach((item, idx) => {
+            if (item.done) return;
+            const div = document.createElement('div');
+            div.className = 'shape-item' + (selectedIdx === idx ? ' selected' : '');
+            div.innerHTML = shapeSVG(item.shape, item.color, item.size);
+            div.setAttribute('role', 'button');
+            div.setAttribute('aria-label', `${SIZE_NAMES[item.size]}${COLOR_NAMES[item.color]}${SHAPE_NAMES[item.shape]}`);
+            div.setAttribute('tabindex', '0');
+            div.onclick = () => selectShape(idx);
+            div.onkeydown = (e) => { if(e.key==='Enter'||e.key===' ') selectShape(idx); };
+            shapesArea.appendChild(div);
+        });
+
+        // 渲染篮子
+        basketsArea.innerHTML = '';
+        currentRule.basketDefs.forEach((bd, bi) => {
+            const div = document.createElement('div');
+            div.className = 'basket';
+            const count = items.filter(it => it.done && it.correctKey === bd.key && it.placedIn === bd.key).length;
+            div.innerHTML = `<span class="basket-icon">${bd.icon || '📦'}</span>${bd.label}<div class="basket-count">${count} 个</div>`;
+            div.setAttribute('role', 'button');
+            div.setAttribute('aria-label', `篮子: ${bd.label}`);
+            div.setAttribute('tabindex', '0');
+            div.onclick = () => placeInBasket(bd.key, bi);
+            div.onkeydown = (e) => { if(e.key==='Enter'||e.key===' ') placeInBasket(bd.key, bi); };
+            basketsArea.appendChild(div);
+        });
+
+        if (items.every(it => it.done)) {
+            // 本轮完成
+            setTimeout(nextRound, 600);
+        }
+    }
+
+    function selectShape(idx) {
+        selectedIdx = (selectedIdx === idx) ? null : idx;
+        document.getElementById('feedback').textContent = '';
+        document.getElementById('feedback').className = 'feedback';
+        render();
+    }
+
+    function placeInBasket(basketKey) {
+        if (selectedIdx === null) {
+            showFeedback('请先点击选择一个图形', 'error');
+            return;
+        }
+        const item = items[selectedIdx];
+        if (item.done) { selectedIdx = null; render(); return; }
+
+        if (item.correctKey === basketKey) {
+            item.done = true;
+            item.placedIn = basketKey;
+            correct++;
+            showFeedback('✅ 正确！', 'success');
+            // 动画
+            const els = document.querySelectorAll('.shape-item');
+            els.forEach(el => {
+                if (el.classList.contains('selected')) el.classList.add('correct');
+            });
+        } else {
+            wrong++;
+            showFeedback('❌ 不对哦，再想想', 'error');
+            const els = document.querySelectorAll('.shape-item');
+            els.forEach(el => {
+                if (el.classList.contains('selected')) el.classList.add('wrong');
+            });
+        }
+        selectedIdx = null;
+        setTimeout(render, 400);
+    }
+
+    function showFeedback(msg, type) {
+        const fb = document.getElementById('feedback');
+        fb.textContent = msg;
+        fb.className = 'feedback ' + type;
+    }
+
+    // ========== 流程控制 ==========
+    function nextRound() {
+        round++;
+        if (round > config.rounds) {
+            showDone();
+            return;
+        }
+        selectedIdx = null;
+        currentRule = generateRound();
+        items = currentRule.items;
+        document.getElementById('feedback').textContent = '';
+        document.getElementById('feedback').className = 'feedback';
+        render();
+    }
+
+    function skipRound() {
+        items.forEach(it => { if(!it.done) { it.done = true; it.placedIn = null; } });
+        nextRound();
+    }
+
+    function startGame() {
+        level = document.getElementById('levelSelect').value;
+        config = LEVELS[level];
+        round = 1;
+        correct = 0;
+        wrong = 0;
+        selectedIdx = null;
+        currentRule = generateRound();
+        items = currentRule.items;
+        document.getElementById('feedback').textContent = '';
+        document.getElementById('feedback').className = 'feedback';
+        closeDone();
+        render();
+    }
+
+    function showDone() {
+        const total = correct + wrong;
+        const rate = total > 0 ? Math.round(correct / total * 100) : 0;
+        const emoji = rate >= 90 ? '🏆' : rate >= 70 ? '🎉' : rate >= 50 ? '💪' : '🤔';
+        const title = rate >= 90 ? '太厉害了！' : rate >= 70 ? '做得不错！' : rate >= 50 ? '继续加油！' : '多练练就好了';
+        document.getElementById('doneEmoji').textContent = emoji;
+        document.getElementById('doneTitle').textContent = title;
+        document.getElementById('doneMsg').textContent = `正确 ${correct} 题，错误 ${wrong} 题，正确率 ${rate}%`;
+        document.getElementById('doneModal').classList.add('show');
+    }
+
+    function closeDone() {
+        document.getElementById('doneModal').classList.remove('show');
+    }
+
+    // ========== 难度切换 ==========
+    document.getElementById('levelSelect').addEventListener('change', startGame);
+
+    // ========== 启动 ==========
+    startGame();
+    </script>
+</body>
+</html>
