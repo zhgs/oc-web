@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📶 顺序排列训练器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh; padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 700px; margin: 0 auto;
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px; padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        header { text-align: center; margin-bottom: 24px; }
+        header h1 { font-size: 28px; color: #c2185b; }
+        header p { color: #888; font-size: 14px; margin-top: 4px; }
+        .back-link {
+            display: inline-block; margin-bottom: 16px;
+            color: #e91e63; text-decoration: none; font-size: 14px;
+        }
+        .back-link:hover { text-decoration: underline; }
+
+        .controls {
+            display: flex; gap: 10px; justify-content: center;
+            flex-wrap: wrap; margin-bottom: 20px;
+        }
+        .controls select, .controls button {
+            padding: 8px 16px; border-radius: 10px;
+            border: 2px solid #e91e63; font-size: 14px;
+            background: #fff; color: #c2185b; cursor: pointer;
+            font-weight: 600;
+        }
+        .controls button { background: #e91e63; color: #fff; }
+        .controls button:hover { background: #c2185b; }
+
+        .stats {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 20px; font-size: 15px; color: #666;
+        }
+        .stats span { font-weight: 700; color: #c2185b; }
+
+        .question-label {
+            text-align: center; font-size: 16px; color: #555;
+            margin-bottom: 16px; font-weight: 600;
+            background: #fce4ec; padding: 10px; border-radius: 10px;
+        }
+
+        .sort-area {
+            min-height: 60px; padding: 12px;
+            border: 2px dashed #e0e0e0; border-radius: 14px;
+            display: flex; flex-direction: column; gap: 10px;
+            margin-bottom: 20px; background: #fafafa;
+            transition: border-color 0.2s;
+        }
+        .sort-area.drag-over { border-color: #e91e63; background: #fce4ec; }
+
+        .sort-item {
+            padding: 14px 18px; background: #fff;
+            border: 2px solid #e0e0e0; border-radius: 12px;
+            font-size: 15px; cursor: grab; user-select: none;
+            display: flex; align-items: center; gap: 12px;
+            transition: all 0.2s; position: relative;
+        }
+        .sort-item:active { cursor: grabbing; }
+        .sort-item.dragging {
+            opacity: 0.4; border-color: #e91e63;
+        }
+        .sort-item .num {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: #e91e63; color: #fff; display: flex;
+            align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 700; flex-shrink: 0;
+        }
+        .sort-item .text { flex: 1; line-height: 1.4; }
+
+        .sort-item.correct {
+            border-color: #4caf50; background: #e8f5e9;
+        }
+        .sort-item.correct .num { background: #4caf50; }
+        .sort-item.wrong {
+            border-color: #f44336; background: #ffebee;
+        }
+        .sort-item.wrong .num { background: #f44336; }
+
+        .btn-row {
+            display: flex; gap: 10px; justify-content: center;
+            margin-bottom: 16px;
+        }
+        .btn {
+            padding: 12px 28px; border: none; border-radius: 12px;
+            font-size: 16px; font-weight: 700; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-check { background: #e91e63; color: #fff; }
+        .btn-check:hover { background: #c2185b; }
+        .btn-next { background: #9c27b0; color: #fff; }
+        .btn-next:hover { background: #7b1fa2; }
+        .btn-reset { background: #607d8b; color: #fff; }
+        .btn-reset:hover { background: #455a64; }
+
+        .result {
+            text-align: center; font-size: 18px; font-weight: 700;
+            padding: 14px; border-radius: 12px; margin-bottom: 16px;
+            display: none;
+        }
+        .result.success { display: block; background: #e8f5e9; color: #2e7d32; }
+        .result.fail { display: block; background: #ffebee; color: #c62828; }
+
+        .answer-box {
+            display: none; background: #f3e5f5; padding: 14px;
+            border-radius: 12px; margin-bottom: 16px;
+        }
+        .answer-box h4 { color: #7b1fa2; margin-bottom: 8px; }
+        .answer-box ol { padding-left: 20px; color: #555; line-height: 1.8; }
+
+        .touch-hint {
+            text-align: center; color: #aaa; font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 500px) {
+            .container { padding: 18px; }
+            header h1 { font-size: 22px; }
+            .sort-item { padding: 10px 14px; font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="../index.html" class="back-link">← 返回导航</a>
+    <header>
+        <h1>📶 顺序排列训练器</h1>
+        <p>拖拽排列正确顺序，训练逻辑思维与条理性</p>
+    </header>
+
+    <div class="controls">
+        <select id="category">
+            <option value="all">全部类型</option>
+            <option value="event">事件排序</option>
+            <option value="number">数字排序</option>
+            <option value="step">步骤排序</option>
+        </select>
+        <select id="difficulty">
+            <option value="easy">简单 (4项)</option>
+            <option value="medium">中等 (5项)</option>
+            <option value="hard">困难 (6项)</option>
+        </select>
+        <button onclick="newQuestion()">🔄 换一题</button>
+    </div>
+
+    <div class="stats">
+        得分: <span id="score">0</span> / <span id="total">0</span>
+        &nbsp;|&nbsp; 连对: <span id="streak">0</span>
+    </div>
+
+    <div class="question-label" id="questionLabel"></div>
+    <p class="touch-hint">💡 长按拖拽调整顺序</p>
+    <div class="sort-area" id="sortArea"></div>
+
+    <div class="result" id="result"></div>
+    <div class="answer-box" id="answerBox">
+        <h4>✅ 正确顺序：</h4>
+        <ol id="answerList"></ol>
+    </div>
+
+    <div class="btn-row">
+        <button class="btn btn-check" id="btnCheck" onclick="checkAnswer()">✅ 提交答案</button>
+        <button class="btn btn-next" id="btnNext" onclick="newQuestion()" style="display:none">➡️ 下一题</button>
+        <button class="btn btn-reset" onclick="resetCurrent()">🔀 重新打乱</button>
+    </div>
+</div>
+
+<script>
+const QUESTIONS = {
+    event: [
+        { q: "把下列历史事件按时间先后排序", items: ["造纸术发明","指南针发明","火药发明","活字印刷术发明"] },
+        { q: "把一天的活动按时间排序", items: ["起床刷牙","吃早餐","去学校上课","放学回家","写作业","睡觉"] },
+        { q: "把植物生长过程排序", items: ["播种","发芽","长叶","开花","结果"] },
+        { q: "把做蛋炒饭的步骤排序", items: ["打鸡蛋搅拌","热锅倒油","倒入蛋液炒熟","加入米饭翻炒","加盐调味","装盘"] },
+        { q: "把寄信的步骤排序", items: ["写信","装入信封","贴邮票","投入邮筒","邮递员取信","收件人收到"] },
+        { q: "把水的状态变化排序（加热）", items: ["冰块","冰开始融化","变成液态水","水开始加热","水沸腾","变成水蒸气"] },
+        { q: "把蝴蝶的生命周期排序", items: ["卵","幼虫（毛毛虫）","蛹","成虫（蝴蝶）"] },
+        { q: "把洗衣服的步骤排序", items: ["把脏衣服放进洗衣机","加洗衣液","选择洗涤模式","启动洗衣机","取出衣服","晾晒衣服"] },
+        { q: "把去图书馆借书的步骤排序", items: ["走进图书馆","找到想借的书","拿到借阅台","出示借书证","办理借阅","带书回家"] },
+        { q: "把月球的月相变化排序", items: ["新月","蛾眉月","上弦月","满月","下弦月","残月"] },
+        { q: "把做三明治的步骤排序", items: ["准备两片面包","涂抹酱料","放上生菜","加入火腿片","盖上另一片面包"] },
+        { q: "把坐飞机的流程排序", items: ["到达机场","办理值机","过安检","找到登机口","登机","飞机起飞"] },
+    ],
+    number: [
+        { q: "把下列分数从小到大排序", items: ["1/4","1/3","1/2","2/3","3/4"] },
+        { q: "把下列数字从大到小排序", items: ["99","78","56","34","12"] },
+        { q: "把下列温度从低到高排序", items: ["-10°C","0°C","15°C","25°C","37°C","100°C"] },
+        { q: "把下列长度从短到长排序", items: ["1毫米","1厘米","1分米","1米","1千米"] },
+        { q: "把下列重量从轻到重排序", items: ["1克","100克","1千克","10千克","1吨"] },
+        { q: "把下列时间从短到长排序", items: ["1秒","1分钟","1小时","1天","1周","1年"] },
+        { q: "把下列面积从小到大排序", items: ["课桌面","教室地面","操场","学校","城市"] },
+        { q: "把下列速度从慢到快排序", items: ["蜗牛爬行","人步行","自行车","汽车","高铁","飞机"] },
+    ],
+    step: [
+        { q: "把解数学应用题的步骤排序", items: ["读题理解题意","找出已知条件","确定解题方法","列出算式","计算结果","检验答案"] },
+        { q: "把写作文的步骤排序", items: ["审题","构思提纲","写开头","展开正文","写结尾","检查修改"] },
+        { q: "把做科学实验的步骤排序", items: ["提出问题","做出假设","设计实验","进行实验","记录数据","得出结论"] },
+        { q: "把整理书包的步骤排序", items: ["查看课程表","找出需要的课本","放入文具盒","装好作业本","检查是否遗漏","拉好拉链"] },
+        { q: "把画一幅画的步骤排序", items: ["构思画面","用铅笔画草稿","勾勒轮廓线","涂上颜色","添加细节","签名完成"] },
+        { q: "把学骑自行车的过程排序", items: ["认识自行车各部分","学会推车","练习上下车","用辅助轮骑行","去掉辅助轮练习","独立骑行"] },
+        { q: "把制作PPT的步骤排序", items: ["确定主题","收集资料","设计大纲","制作幻灯片","添加动画效果","预览检查"] },
+        { q: "把解决bug的步骤排序", items: ["复现问题","查看错误日志","定位问题代码","分析原因","编写修复代码","测试验证"] },
+    ]
+};
+
+let score = 0, total = 0, streak = 0;
+let currentItems = [], correctOrder = [];
+let dragSrcEl = null;
+
+function pickItems(arr, count) {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy.slice(0, count);
+}
+
+function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    // make sure it's not already in order
+    if (a.every((v, i) => v === arr[i]) && a.length > 1) {
+        [a[0], a[1]] = [a[1], a[0]];
+    }
+    return a;
+}
+
+function getCount() {
+    const d = document.getElementById('difficulty').value;
+    return d === 'easy' ? 4 : d === 'medium' ? 5 : 6;
+}
+
+function newQuestion() {
+    const cat = document.getElementById('category').value;
+    const count = getCount();
+    let pool = [];
+    if (cat === 'all') {
+        pool = [...QUESTIONS.event, ...QUESTIONS.number, ...QUESTIONS.step];
+    } else {
+        pool = QUESTIONS[cat];
+    }
+    // filter by count
+    let candidates = pool.filter(q => q.items.length >= count);
+    if (candidates.length === 0) candidates = pool;
+    const q = candidates[Math.floor(Math.random() * candidates.length)];
+    correctOrder = q.items.slice(0, count);
+    currentItems = shuffle(correctOrder);
+
+    document.getElementById('questionLabel').textContent = q.q;
+    document.getElementById('result').className = 'result';
+    document.getElementById('result').textContent = '';
+    document.getElementById('answerBox').style.display = 'none';
+    document.getElementById('btnCheck').style.display = '';
+    document.getElementById('btnNext').style.display = 'none';
+    renderItems();
+}
+
+function renderItems() {
+    const area = document.getElementById('sortArea');
+    area.innerHTML = '';
+    currentItems.forEach((item, i) => {
+        const div = document.createElement('div');
+        div.className = 'sort-item';
+        div.draggable = true;
+        div.dataset.index = i;
+        div.innerHTML = `<div class="num">${i + 1}</div><div class="text">${item}</div>`;
+        // drag events
+        div.addEventListener('dragstart', handleDragStart);
+        div.addEventListener('dragover', handleDragOver);
+        div.addEventListener('drop', handleDrop);
+        div.addEventListener('dragend', handleDragEnd);
+        // touch events
+        div.addEventListener('touchstart', handleTouchStart, { passive: false });
+        div.addEventListener('touchmove', handleTouchMove, { passive: false });
+        div.addEventListener('touchend', handleTouchEnd);
+        area.appendChild(div);
+    });
+}
+
+function handleDragStart(e) {
+    dragSrcEl = this;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', this.dataset.index);
+}
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+}
+function handleDrop(e) {
+    e.preventDefault();
+    if (dragSrcEl === this) return;
+    const fromIdx = parseInt(dragSrcEl.dataset.index);
+    const toIdx = parseInt(this.dataset.index);
+    const temp = currentItems[fromIdx];
+    currentItems.splice(fromIdx, 1);
+    currentItems.splice(toIdx, 0, temp);
+    renderItems();
+}
+function handleDragEnd() {
+    document.querySelectorAll('.sort-item').forEach(el => el.classList.remove('dragging'));
+}
+
+// Touch support
+let touchStartY = 0, touchEl = null, touchClone = null, touchIdx = -1;
+function handleTouchStart(e) {
+    touchEl = this;
+    touchIdx = parseInt(this.dataset.index);
+    touchStartY = e.touches[0].clientY;
+    this.classList.add('dragging');
+    e.preventDefault();
+}
+function handleTouchMove(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const items = document.querySelectorAll('.sort-item');
+    let targetIdx = touchIdx;
+    items.forEach((item, i) => {
+        const rect = item.getBoundingClientRect();
+        if (touch.clientY > rect.top && touch.clientY < rect.bottom && i !== touchIdx) {
+            targetIdx = i;
+        }
+    });
+    if (targetIdx !== touchIdx) {
+        const temp = currentItems[touchIdx];
+        currentItems.splice(touchIdx, 1);
+        currentItems.splice(targetIdx, 0, temp);
+        touchIdx = targetIdx;
+        renderItems();
+        document.querySelectorAll('.sort-item')[touchIdx].classList.add('dragging');
+    }
+}
+function handleTouchEnd() {
+    document.querySelectorAll('.sort-item').forEach(el => el.classList.remove('dragging'));
+    touchEl = null;
+}
+
+function checkAnswer() {
+    total++;
+    const items = document.querySelectorAll('.sort-item');
+    let allCorrect = true;
+    items.forEach((el, i) => {
+        if (currentItems[i] === correctOrder[i]) {
+            el.classList.add('correct');
+        } else {
+            el.classList.add('wrong');
+            allCorrect = false;
+        }
+        el.draggable = false;
+    });
+
+    const result = document.getElementById('result');
+    if (allCorrect) {
+        score++;
+        streak++;
+        result.className = 'result success';
+        result.textContent = `🎉 完全正确！${streak > 1 ? '连对 ' + streak + ' 题！' : ''}`;
+    } else {
+        streak = 0;
+        result.className = 'result fail';
+        result.textContent = '😅 顺序不太对，看看正确答案吧';
+        const answerBox = document.getElementById('answerBox');
+        const answerList = document.getElementById('answerList');
+        answerList.innerHTML = correctOrder.map(item => `<li>${item}</li>`).join('');
+        answerBox.style.display = 'block';
+    }
+
+    document.getElementById('score').textContent = score;
+    document.getElementById('total').textContent = total;
+    document.getElementById('streak').textContent = streak;
+    document.getElementById('btnCheck').style.display = 'none';
+    document.getElementById('btnNext').style.display = '';
+}
+
+function resetCurrent() {
+    currentItems = shuffle(correctOrder);
+    document.getElementById('result').className = 'result';
+    document.getElementById('answerBox').style.display = 'none';
+    document.getElementById('btnCheck').style.display = '';
+    document.getElementById('btnNext').style.display = 'none';
+    renderItems();
+}
+
+// init
+newQuestion();
+</script>
+</body>
+</html>
