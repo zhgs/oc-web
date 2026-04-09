@@ -1,0 +1,111 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成语接龙逻辑版 - 小学生语言逻辑训练</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif; background: linear-gradient(135deg, #fff8e7 0%, #ffeedd 100%); min-height: 100vh; }
+.container { max-width: 800px; margin: 0 auto; padding: 20px; }
+.card { background: white; border-radius: 20px; padding: 30px; margin: 20px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+.btn { background: linear-gradient(135deg, #ff6b6b, #ee5a5a); color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 18px; cursor: pointer; transition: transform 0.2s; }
+.btn:hover { transform: scale(1.05); }
+.btn-secondary { background: linear-gradient(135deg, #4ecdc4, #44a8a0); }
+h1 { color: #d63031; text-align: center; margin-bottom: 20px; }
+.idiom-display { font-size: 48px; text-align: center; color: #2d3436; margin: 30px 0; font-weight: bold; }
+.input-area { text-align: center; margin: 20px 0; }
+.input-area input { font-size: 24px; padding: 15px; border: 3px solid #ddd; border-radius: 15px; width: 300px; text-align: center; }
+.input-area input:focus { border-color: #ff6b6b; outline: none; }
+.meaning { background: #f8f9fa; padding: 20px; border-radius: 15px; margin: 20px 0; border-left: 5px solid #ff6b6b; }
+.meaning-title { color: #d63031; font-weight: bold; margin-bottom: 10px; }
+.hint { text-align: center; margin: 15px 0; color: #666; font-size: 18px; }
+.stars { text-align: center; font-size: 36px; }
+.level-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+.level-btn { background: linear-gradient(135deg, #ffd93d, #ffb347); border: none; padding: 20px; border-radius: 15px; cursor: pointer; transition: transform 0.2s; }
+.level-btn:hover { transform: scale(1.05); }
+.level-btn.completed { background: linear-gradient(135deg, #6bcb77, #4ecdc4); }
+.progress { background: #eee; height: 20px; border-radius: 10px; overflow: hidden; margin: 20px 0; }
+.progress-bar { background: linear-gradient(90deg, #ff6b6b, #ffd93d); height: 100%; transition: width 0.5s; }
+.mascot { text-align: center; font-size: 80px; margin: 20px 0; }
+.hidden { display: none; }
+.error-msg { color: #e74c3c; text-align: center; margin: 10px 0; }
+.correct-msg { color: #27ae60; text-align: center; margin: 10px 0; font-size: 18px; }
+</style>
+</head>
+<body>
+<div class="container">
+<div id="welcome-screen" class="card">
+<div class="mascot">🐲</div>
+<h1>📜 成语接龙逻辑版</h1>
+<p style="text-align: center; font-size: 20px; color: #666; margin-bottom: 30px;">适合小学生的成语接龙小游戏</p>
+<button class="btn" onclick="showLevels()">开始闯关 🎯</button>
+</div>
+<div id="level-screen" class="card hidden">
+<h1>🌟 选择关卡</h1>
+<div class="level-grid">
+<button class="level-btn" onclick="startLevel(1)"><div>🌱 萌芽关</div><small>一心一意 → ...</small></button>
+<button class="level-btn" onclick="startLevel(2)"><div>🌿 成长关</div><small>画蛇添足 → ...</small></button>
+<button class="level-btn" onclick="startLevel(3)"><div>🌳 挑战关</div><small>守株待兔 → ...</small></button>
+<button class="level-btn" onclick="startLevel(4)"><div>🏔️ 攀登关</div><small>开天辟地 → ...</small></button>
+<button class="level-btn" onclick="startLevel(5)"><div>⭐ 大师关</div><small>心花怒放 → ...</small></button>
+<button class="level-btn" onclick="startLevel(6)"><div>👑 学霸关</div><small>龙飞凤舞 → ...</small></button>
+</div>
+<button class="btn btn-secondary" onclick="showWelcome()" style="margin-top: 20px;">返回</button>
+</div>
+<div id="game-screen" class="card hidden">
+<div class="progress"><div class="progress-bar" id="progress-bar" style="width: 0%"></div></div>
+<div style="text-align: center; color: #666; margin-bottom: 10px;">第 <span id="current-step">1</span> 关 | 共 5 关</div>
+<div class="mascot" id="mascot">🐲</div>
+<div class="idiom-display" id="current-idiom">一心一意</div>
+<div class="hint" id="hint">请输入以「<span id="hint-char">意</span>」开头的成语</div>
+<div class="input-area">
+<input type="text" id="answer-input" placeholder="输入成语" onkeypress="handleEnter(event)">
+<button class="btn" onclick="checkAnswer()" style="margin-left: 10px;">确认</button>
+</div>
+<div class="error-msg" id="error-msg"></div>
+<div class="correct-msg" id="correct-msg"></div>
+<div class="meaning hidden" id="meaning-box">
+<div class="meaning-title">📖 释义</div>
+<div id="meaning-text"></div>
+</div>
+<div style="text-align: center; margin-top: 20px;">
+<button class="btn btn-secondary" onclick="showHint()" style="font-size: 14px; padding: 10px 20px;">提示</button>
+<button class="btn btn-secondary" onclick="skipAnswer()" style="font-size: 14px; padding: 10px 20px; margin-left: 10px;">跳过</button>
+</div>
+</div>
+<div id="complete-screen" class="card hidden">
+<div class="mascot">🎉</div>
+<h1>🎊 恭喜过关！</h1>
+<div class="stars" id="stars">⭐⭐⭐</div>
+<p style="text-align: center; font-size: 18px; margin: 20px 0;">你成功完成了本关所有成语接龙！</p>
+<button class="btn" onclick="showLevels()">选择下一关</button>
+<button class="btn btn-secondary" onclick="showWelcome()" style="margin-left: 10px;">返回首页</button>
+</div>
+</div>
+<script>
+const levels = {
+1: { name: "萌芽关", chain: ["一心一意", "意气风发", "发奋图强", "强词夺理", "理直气壮"], meanings: { "一心一意": "形容专心一意，集中精力做一件事", "意气风发": "形容精神振奋，气概豪迈", "发奋图强": "下定决心，努力追求进步", "强词夺理": "本指无理强辩，这里用作接龙", "理直气壮": "理由充分，说话有底气" }},
+2: { name: "成长关", chain: ["画蛇添足", "足智多谋", "谋事在人", "人山人海", "海阔天空"], meanings: { "画蛇添足": "做多余的事，反而弄巧成拙", "足智多谋": "形容人聪明，善于想办法", "谋事在人": "谋划事情在于人的努力", "人山人海": "形容聚集的人非常多", "海阔天空": "形容大自然的广阔" }},
+3: { name: "挑战关", chain: ["守株待兔", "兔死狐悲", "悲欢离合", "合二为一", "一鸣惊人"], meanings: { "守株待兔": "比喻不主动努力，存侥幸心理", "兔死狐悲": "比喻因同类的不幸而感到悲伤", "悲欢离合": "泛指生活中的悲哀、欢乐、离散、聚会", "合二为一": "把两个合并成一个", "一鸣惊人": "比喻平时没有表现，一下子做出惊人成绩" }},
+4: { name: "攀登关", chain: ["开天辟地", "地久天长", "长驱直入", "入木三分", "分秒必争"], meanings: { "开天辟地": "比喻前所未有的伟大事业", "地久天长": "形容时间悠久", "长驱直入": "军队以不可阻挡之势快速前进", "入木三分": "形容书法笔力刚劲，也比喻见解深刻", "分秒必争": "形容抓紧时间" }},
+5: { name: "大师关", chain: ["心花怒放", "放虎归山", "山清水秀", "秀色可餐", "餐风露宿"], meanings: { "心花怒放": "形容内心高兴极了", "放虎归山": "比喻把坏人放走，留下后患", "山清水秀": "形容风景优美", "秀色可餐": "形容女子容貌非常美丽", "餐风露宿": "形容旅途或野外生活的艰苦" }},
+6: { name: "学霸关", chain: ["龙飞凤舞", "舞文弄墨", "墨守成规", "规行矩步", "步步为营"], meanings: { "龙飞凤舞": "形容书法笔势有力", "舞文弄墨": "形容玩弄文字技巧", "墨守成规": "形容因循守旧，不肯改进", "规行矩步": "比喻举动合乎规矩", "步步为营": "比喻行动谨慎，防守严密" }}
+};
+let currentLevel = 1;
+let currentStep = 0;
+let hintsUsed = 0;
+let errors = 0;
+let completedLevels = [];
+function showWelcome() { document.querySelectorAll('.card').forEach(c => c.classList.add('hidden')); document.getElementById('welcome-screen').classList.remove('hidden'); }
+function showLevels() { document.querySelectorAll('.card').forEach(c => c.classList.add('hidden')); document.getElementById('level-screen').classList.remove('hidden'); }
+function startLevel(level) { currentLevel = level; currentStep = 0; hintsUsed = 0; errors = 0; document.querySelectorAll('.card').forEach(c => c.classList.add('hidden')); document.getElementById('game-screen').classList.remove('hidden'); showIdiom(); }
+function showIdiom() { const level = levels[currentLevel]; document.getElementById('current-step').textContent = currentStep + 1; document.getElementById('progress-bar').style.width = ((currentStep) / level.chain.length * 100) + '%'; document.getElementById('current-idiom').textContent = level.chain[currentStep]; document.getElementById('hint-char').textContent = level.chain[currentStep].slice(-1); document.getElementById('answer-input').value = ''; document.getElementById('error-msg').textContent = ''; document.getElementById('correct-msg').textContent = ''; document.getElementById('meaning-box').classList.add('hidden'); document.getElementById('answer-input').focus(); }
+function handleEnter(e) { if (e.key === 'Enter') checkAnswer(); }
+function checkAnswer() { const input = document.getElementById('answer-input').value.trim(); const level = levels[currentLevel]; if (!input) return; if (input === level.chain[currentStep + 1]) { document.getElementById('correct-msg').textContent = '✅ 回答正确！'; document.getElementById('meaning-text').textContent = level.meanings[level.chain[currentStep + 1]]; document.getElementById('meaning-box').classList.remove('hidden'); setTimeout(() => { currentStep++; if (currentStep >= level.chain.length - 1) { showComplete(); } else { showIdiom(); } }, 1500); } else { errors++; document.getElementById('error-msg').textContent = '❌ 再试一次！'; document.getElementById('answer-input').value = ''; document.getElementById('answer-input').focus(); } }
+function showHint() { hintsUsed++; const level = levels[currentLevel]; const nextIdiom = level.chain[currentStep + 1]; document.getElementById('hint').innerHTML = '提示：答案以「<strong>' + nextIdiom.charAt(0) + '</strong>」开头'; }
+function skipAnswer() { const level = levels[currentLevel]; document.getElementById('answer-input').value = level.chain[currentStep + 1]; checkAnswer(); }
+function showComplete() { document.querySelectorAll('.card').forEach(c => c.classList.add('hidden')); document.getElementById('complete-screen').classList.remove('hidden'); let starCount = 3; if (hintsUsed > 2) starCount--; if (errors > 3) starCount--; document.getElementById('stars').textContent = '⭐'.repeat(Math.max(1, starCount)); if (!completedLevels.includes(currentLevel)) completedLevels.push(currentLevel); }
+</script>
+</body>
+</html>
