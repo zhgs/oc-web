@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>方向位置判断训练</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 { text-align: center; font-size: 1.8em; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #888; margin-bottom: 20px; font-size: 0.95em; }
+
+        /* 模式选择 */
+        .mode-tabs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .mode-tab {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            border-radius: 25px;
+            background: #fff;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .mode-tab:hover { background: #eef; }
+        .mode-tab.active { background: #667eea; color: #fff; }
+
+        /* 分数面板 */
+        .score-panel {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: #f0f4ff;
+            border-radius: 12px;
+        }
+        .score-item { text-align: center; }
+        .score-item .label { font-size: 0.85em; color: #888; }
+        .score-item .value { font-size: 1.4em; font-weight: bold; color: #667eea; }
+
+        /* 题目区域 */
+        .question-area {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .question-text {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        .highlight { color: #e74c3c; font-weight: bold; }
+
+        /* 上下左右网格场景 */
+        .grid-scene {
+            display: inline-grid;
+            grid-template-columns: repeat(5, 60px);
+            grid-template-rows: repeat(5, 60px);
+            gap: 3px;
+            margin: 15px auto;
+            background: #e8eaf6;
+            padding: 8px;
+            border-radius: 12px;
+        }
+        .grid-cell {
+            width: 60px;
+            height: 60px;
+            background: #fff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8em;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        .grid-cell.center { background: #fff3cd; border-color: #ffc107; }
+        .grid-cell.target { background: #d4edda; border-color: #28a745; animation: pulse 1s infinite; }
+        .grid-cell.ref { background: #e8daef; border-color: #8e44ad; }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+
+        /* 指南针场景 */
+        .compass-scene {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 15px auto;
+        }
+        .compass-ring {
+            width: 280px;
+            height: 280px;
+            border: 4px solid #667eea;
+            border-radius: 50%;
+            position: relative;
+            background: radial-gradient(circle, #f8f9ff 0%, #e8ecff 100%);
+        }
+        .compass-dir {
+            position: absolute;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .compass-dir.north { top: 8px; left: 50%; transform: translateX(-50%); color: #e74c3c; }
+        .compass-dir.south { bottom: 8px; left: 50%; transform: translateX(-50%); }
+        .compass-dir.east { right: 12px; top: 50%; transform: translateY(-50%); }
+        .compass-dir.west { left: 12px; top: 50%; transform: translateY(-50%); }
+        .compass-dir.ne { top: 40px; right: 30px; font-size: 0.9em; }
+        .compass-dir.nw { top: 40px; left: 30px; font-size: 0.9em; }
+        .compass-dir.se { bottom: 40px; right: 30px; font-size: 0.9em; }
+        .compass-dir.sw { bottom: 40px; left: 30px; font-size: 0.9em; }
+        .compass-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2em;
+        }
+        .compass-marker {
+            position: absolute;
+            font-size: 1.6em;
+            transition: all 0.5s;
+        }
+
+        /* 选项按钮 */
+        .options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        .option-btn {
+            padding: 12px 28px;
+            border: 3px solid #667eea;
+            border-radius: 12px;
+            background: #fff;
+            color: #667eea;
+            font-size: 1.15em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s;
+            min-width: 80px;
+        }
+        .option-btn:hover { background: #667eea; color: #fff; transform: translateY(-2px); }
+        .option-btn:active { transform: translateY(0); }
+        .option-btn.correct { background: #27ae60; border-color: #27ae60; color: #fff; animation: correctAnim 0.5s; }
+        .option-btn.wrong { background: #e74c3c; border-color: #e74c3c; color: #fff; animation: shake 0.4s; }
+        .option-btn.disabled { pointer-events: none; opacity: 0.6; }
+
+        @keyframes correctAnim {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+
+        /* 反馈 */
+        .feedback {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 1.2em;
+            font-weight: 600;
+            min-height: 40px;
+            transition: all 0.3s;
+        }
+        .feedback.correct { color: #27ae60; }
+        .feedback.wrong { color: #e74c3c; }
+
+        /* 下一题按钮 */
+        .next-btn {
+            display: none;
+            margin: 15px auto 0;
+            padding: 12px 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .next-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
+        .next-btn.show { display: block; }
+
+        /* 返回链接 */
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 0.95em;
+        }
+        .back-link:hover { color: #fff; }
+
+        /* 结果页 */
+        .result-page { display: none; text-align: center; }
+        .result-page h2 { font-size: 1.6em; margin-bottom: 10px; }
+        .result-emoji { font-size: 4em; margin: 10px 0; }
+        .result-score { font-size: 1.3em; color: #667eea; margin-bottom: 10px; }
+        .result-detail { font-size: 0.95em; color: #888; margin-bottom: 20px; }
+        .restart-btn {
+            padding: 12px 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .restart-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
+
+        /* 描述说明 */
+        .direction-hint {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin: 10px 0;
+            font-size: 0.9em;
+            color: #888;
+            flex-wrap: wrap;
+        }
+        .direction-hint span { display: flex; align-items: center; gap: 4px; }
+        .hint-dot {
+            width: 14px; height: 14px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .hint-dot.center-dot { background: #fff3cd; border: 2px solid #ffc107; }
+        .hint-dot.target-dot { background: #d4edda; border: 2px solid #28a745; }
+        .hint-dot.ref-dot { background: #e8daef; border: 2px solid #8e44ad; }
+
+        @media (max-width: 500px) {
+            .container { padding: 18px; }
+            h1 { font-size: 1.4em; }
+            .grid-scene { grid-template-columns: repeat(5, 48px); grid-template-rows: repeat(5, 48px); }
+            .grid-cell { width: 48px; height: 48px; font-size: 1.4em; }
+            .option-btn { padding: 10px 20px; font-size: 1em; }
+            .compass-scene, .compass-ring { width: 240px; height: 240px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧭 方向位置判断训练</h1>
+        <p class="subtitle">训练上下左右、东南西北方位判断能力</p>
+
+        <!-- 模式选择 -->
+        <div class="mode-tabs">
+            <button class="mode-tab active" onclick="switchMode('udlr')">上下左右</button>
+            <button class="mode-tab" onclick="switchMode('compass')">东南西北</button>
+            <button class="mode-tab" onclick="switchMode('relative')">相对方位</button>
+            <button class="mode-tab" onclick="switchMode('mixed')">综合挑战</button>
+        </div>
+
+        <!-- 分数面板 -->
+        <div class="score-panel">
+            <div class="score-item">
+                <div class="label">第</div>
+                <div class="value" id="currentQ">1</div>
+                <div class="label">题</div>
+            </div>
+            <div class="score-item">
+                <div class="label">正确</div>
+                <div class="value" id="correctCount">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">错误</div>
+                <div class="value" id="wrongCount">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">正确率</div>
+                <div class="value" id="accuracy">0%</div>
+            </div>
+        </div>
+
+        <!-- 游戏区 -->
+        <div id="gameArea">
+            <div class="question-area">
+                <div class="question-text" id="questionText">加载中...</div>
+                <div class="direction-hint" id="dirHint"></div>
+                <div id="sceneArea"></div>
+            </div>
+            <div class="options" id="optionsArea"></div>
+            <div class="feedback" id="feedback"></div>
+            <button class="next-btn" id="nextBtn" onclick="nextQuestion()">下一题 →</button>
+        </div>
+
+        <!-- 结果页 -->
+        <div class="result-page" id="resultPage">
+            <div class="result-emoji" id="resultEmoji">🎉</div>
+            <h2 id="resultTitle">训练完成！</h2>
+            <div class="result-score" id="resultScore"></div>
+            <div class="result-detail" id="resultDetail"></div>
+            <button class="restart-btn" onclick="restart()">再来一轮 🔄</button>
+        </div>
+    </div>
+
+    <a href="../index.html" class="back-link">← 返回导航中心</a>
+
+    <script>
+    // ============ 游戏状态 ============
+    let currentMode = 'udlr';
+    let questionIndex = 0;
+    let correct = 0;
+    let wrong = 0;
+    const TOTAL_QUESTIONS = 10;
+    let answered = false;
+
+    const EMOJIS = ['🐱','🐶','🐰','🐸','🐻','🐼','🐨','🦊','🐯','🐮','🐷','🐵','🦁','🐧','🐔','🐙','🦋','🐢','🐠','🦄','🌸','⭐','🍎','🏀','🎈','🌈','🎯','🔔','💎','🍀'];
+    const DIRS_UDLR = ['上','下','左','右'];
+    const DIRS_COMPASS = ['东','南','西','北'];
+    const DIRS_COMPASS_8 = ['东','南','西','北','东北','东南','西北','西南'];
+
+    // ============ 模式切换 ============
+    function switchMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+        event.target.classList.add('active');
+        restart();
+    }
+
+    function restart() {
+        questionIndex = 0;
+        correct = 0;
+        wrong = 0;
+        answered = false;
+        updateScore();
+        document.getElementById('resultPage').style.display = 'none';
+        document.getElementById('gameArea').style.display = 'block';
+        generateQuestion();
+    }
+
+    function updateScore() {
+        document.getElementById('currentQ').textContent = questionIndex + 1;
+        document.getElementById('correctCount').textContent = correct;
+        document.getElementById('wrongCount').textContent = wrong;
+        const total = correct + wrong;
+        document.getElementById('accuracy').textContent = total ? Math.round(correct / total * 100) + '%' : '0%';
+    }
+
+    // ============ 生成题目 ============
+    function generateQuestion() {
+        answered = false;
+        document.getElementById('feedback').textContent = '';
+        document.getElementById('feedback').className = 'feedback';
+        document.getElementById('nextBtn').classList.remove('show');
+        updateScore();
+
+        switch (currentMode) {
+            case 'udlr': genUDLR(); break;
+            case 'compass': genCompass(); break;
+            case 'relative': genRelative(); break;
+            case 'mixed':
+                const modes = ['udlr', 'compass', 'relative'];
+                const m = modes[Math.floor(Math.random() * modes.length)];
+                if (m === 'udlr') genUDLR();
+                else if (m === 'compass') genCompass();
+                else genRelative();
+                break;
+        }
+    }
+
+    // ---- 上下左右模式 ----
+    function genUDLR() {
+        const grid = Array(25).fill('');
+        // 中心位置
+        const centerIdx = 12; // 5x5 中心
+        const centerEmoji = pickRandom(EMOJIS);
+        grid[centerIdx] = centerEmoji;
+
+        // 随机放置一个目标
+        const positions = [
+            { idx: 7, dir: '上' },   // 正上 (1,2)
+            { idx: 17, dir: '下' },  // 正下 (3,2)
+            { idx: 11, dir: '左' },  // 正左 (2,1)
+            { idx: 13, dir: '右' },  // 正右 (2,3)
+            { idx: 2, dir: '上' },   // 上方 (0,2)
+            { idx: 22, dir: '下' },  // 下方 (4,2)
+            { idx: 10, dir: '左' },  // 左方 (2,0)
+            { idx: 14, dir: '右' },  // 右方 (2,4)
+            { idx: 6, dir: '左' },   // 左上→左 (1,1)
+            { idx: 8, dir: '右' },   // 右上→右 (1,3)
+            { idx: 16, dir: '左' },  // 左下→左 (3,1)
+            { idx: 18, dir: '右' },  // 右下→右 (3,3)
+        ];
+
+        // 随机选题型
+        const qType = Math.random();
+        if (qType < 0.5) {
+            // 类型1: 目标在中心的哪个方向？
+            const pos = pickRandom(positions);
+            const targetEmoji = pickDiffRandom(EMOJIS, [centerEmoji]);
+            grid[pos.idx] = targetEmoji;
+            // 填几个干扰物
+            fillDistractors(grid, [centerIdx, pos.idx], 3);
+
+            renderGrid(grid, centerIdx, pos.idx);
+            document.getElementById('questionText').innerHTML =
+                `<span class="highlight">${targetEmoji}</span> 在 <span class="highlight">${centerEmoji}</span> 的哪个方向？`;
+            document.getElementById('dirHint').innerHTML =
+                `<span><span class="hint-dot center-dot"></span> 参照物</span>
+                 <span><span class="hint-dot target-dot"></span> 目标</span>`;
+            renderOptions(DIRS_UDLR, pos.dir);
+        } else {
+            // 类型2: 中心的某方向是什么？
+            const pos = pickRandom(positions);
+            const targetEmoji = pickDiffRandom(EMOJIS, [centerEmoji]);
+            grid[pos.idx] = targetEmoji;
+            fillDistractors(grid, [centerIdx, pos.idx], 3);
+
+            renderGrid(grid, centerIdx, pos.idx);
+            document.getElementById('questionText').innerHTML =
+                `<span class="highlight">${centerEmoji}</span> 的 <span class="highlight">${pos.dir}方</span> 是什么？`;
+            document.getElementById('dirHint').innerHTML =
+                `<span><span class="hint-dot center-dot"></span> 参照物</span>`;
+            // 选项是 emoji
+            const distractors = grid.filter((e, i) => e && i !== centerIdx && i !== pos.idx).slice(0, 2);
+            while (distractors.length < 3) distractors.push(pickDiffRandom(EMOJIS, [centerEmoji, targetEmoji, ...distractors]));
+            const opts = shuffle([targetEmoji, ...distractors]);
+            renderOptions(opts, targetEmoji);
+        }
+    }
+
+    // ---- 东南西北模式 ----
+    function genCompass() {
+        const scene = document.getElementById('sceneArea');
+        // 随机用4方或8方
+        const use8 = Math.random() > 0.5;
+        const dirs = use8 ? DIRS_COMPASS_8 : DIRS_COMPASS;
+        const qType = Math.random();
+
+        if (qType < 0.4) {
+            // 类型1: 指南针上标注一个位置，问方向
+            const targetDir = pickRandom(dirs);
+            const emoji = pickRandom(EMOJIS);
+            renderCompass(scene, targetDir, emoji);
+            document.getElementById('questionText').innerHTML =
+                `<span class="highlight">${emoji}</span> 在指南针的哪个方向？`;
+            document.getElementById('dirHint').innerHTML = '';
+            renderOptions(dirs, targetDir);
+        } else if (qType < 0.7) {
+            // 类型2: 地图上方是北，A在B的哪方？
+            const grid = Array(25).fill('');
+            const centerIdx = 12;
+            const centerEmoji = pickRandom(EMOJIS);
+            grid[centerIdx] = centerEmoji;
+
+            const compassPositions = [
+                { idx: 7, dir: '北' }, { idx: 2, dir: '北' },
+                { idx: 17, dir: '南' }, { idx: 22, dir: '南' },
+                { idx: 13, dir: '东' }, { idx: 14, dir: '东' },
+                { idx: 11, dir: '西' }, { idx: 10, dir: '西' },
+            ];
+            if (use8) {
+                compassPositions.push(
+                    { idx: 6, dir: '西北' }, { idx: 1, dir: '西北' },
+                    { idx: 8, dir: '东北' }, { idx: 3, dir: '东北' },
+                    { idx: 16, dir: '西南' }, { idx: 21, dir: '西南' },
+                    { idx: 18, dir: '东南' }, { idx: 23, dir: '东南' }
+                );
+            }
+            const pos = pickRandom(compassPositions);
+            const targetEmoji = pickDiffRandom(EMOJIS, [centerEmoji]);
+            grid[pos.idx] = targetEmoji;
+            fillDistractors(grid, [centerIdx, pos.idx], 2);
+
+            renderGrid(grid, centerIdx, pos.idx, true);
+            document.getElementById('questionText').innerHTML =
+                `上北下南左西右东<br><span class="highlight">${targetEmoji}</span> 在 <span class="highlight">${centerEmoji}</span> 的哪个方向？`;
+            document.getElementById('dirHint').innerHTML =
+                `<span><span class="hint-dot center-dot"></span> 参照物</span>
+                 <span><span class="hint-dot target-dot"></span> 目标</span>`;
+            renderOptions(dirs, pos.dir);
+        } else {
+            // 类型3: 文字描述
+            const scenarios = [
+                { q: '太阳从哪个方向升起？', a: '东' },
+                { q: '太阳从哪个方向落下？', a: '西' },
+                { q: '指南针的红色指针指向哪个方向？', a: '北' },
+                { q: '中国的海南岛在大陆的哪个方向？', a: '南' },
+                { q: '面向北方，你的右手边是哪个方向？', a: '东' },
+                { q: '面向北方，你的左手边是哪个方向？', a: '西' },
+                { q: '面向南方，你的右手边是哪个方向？', a: '西' },
+                { q: '面向南方，你的左手边是哪个方向？', a: '东' },
+                { q: '面向东方，你的背后是哪个方向？', a: '西' },
+                { q: '面向西方，你的背后是哪个方向？', a: '东' },
+                { q: '北极星在天空的哪个方向？', a: '北' },
+                { q: '面向东方，你的左手边是哪个方向？', a: '北' },
+                { q: '面向东方，你的右手边是哪个方向？', a: '南' },
+                { q: '面向西方，你的左手边是哪个方向？', a: '南' },
+                { q: '面向西方，你的右手边是哪个方向？', a: '北' },
+            ];
+            const s = pickRandom(scenarios);
+            scene.innerHTML = '';
+            document.getElementById('questionText').innerHTML = s.q;
+            document.getElementById('dirHint').innerHTML = '';
+            renderOptions(DIRS_COMPASS, s.a);
+        }
+    }
+
+    // ---- 相对方位模式 ----
+    function genRelative() {
+        const scenarios = [
+            // 面朝方向后的左右
+            () => {
+                const facing = pickRandom(['北','南','东','西']);
+                const ask = pickRandom(['左','右','前','后']);
+                const map = {
+                    '北': { '左':'西', '右':'东', '前':'北', '后':'南' },
+                    '南': { '左':'东', '右':'西', '前':'南', '后':'北' },
+                    '东': { '左':'北', '右':'南', '前':'东', '后':'西' },
+                    '西': { '左':'南', '右':'北', '前':'西', '后':'东' },
+                };
+                const answer = map[facing][ask];
+                return {
+                    q: `面朝 <span class="highlight">${facing}</span> 方，你的 <span class="highlight">${ask}边</span> 是哪个方向？`,
+                    a: answer,
+                    opts: DIRS_COMPASS
+                };
+            },
+            // 转向
+            () => {
+                const start = pickRandom(['北','南','东','西']);
+                const turn = pickRandom(['左转','右转','向后转']);
+                const leftMap = { '北':'西', '西':'南', '南':'东', '东':'北' };
+                const rightMap = { '北':'东', '东':'南', '南':'西', '西':'北' };
+                const backMap = { '北':'南', '南':'北', '东':'西', '西':'东' };
+                let answer;
+                if (turn === '左转') answer = leftMap[start];
+                else if (turn === '右转') answer = rightMap[start];
+                else answer = backMap[start];
+                return {
+                    q: `面朝 <span class="highlight">${start}</span> 方，<span class="highlight">${turn}</span> 后面朝哪个方向？`,
+                    a: answer,
+                    opts: DIRS_COMPASS
+                };
+            },
+            // 上下左右转换
+            () => {
+                const emojis = pickNRandom(EMOJIS, 2);
+                const rel = pickRandom(['上','下','左','右']);
+                const oppMap = { '上':'下', '下':'上', '左':'右', '右':'左' };
+                return {
+                    q: `${emojis[0]} 在 ${emojis[1]} 的 <span class="highlight">${rel}方</span>，那么 ${emojis[1]} 在 ${emojis[0]} 的哪个方向？`,
+                    a: oppMap[rel],
+                    opts: DIRS_UDLR
+                };
+            },
+        ];
+
+        const gen = pickRandom(scenarios)();
+        document.getElementById('sceneArea').innerHTML = '';
+        document.getElementById('questionText').innerHTML = gen.q;
+        document.getElementById('dirHint').innerHTML = '';
+        renderOptions(gen.opts, gen.a);
+    }
+
+    // ============ 渲染 ============
+    function renderGrid(grid, centerIdx, targetIdx, showNorth) {
+        const scene = document.getElementById('sceneArea');
+        let html = '';
+        if (showNorth) html += '<div style="text-align:center;font-size:0.9em;color:#e74c3c;margin-bottom:4px;">⬆ 北</div>';
+        html += '<div class="grid-scene">';
+        for (let i = 0; i < 25; i++) {
+            let cls = 'grid-cell';
+            if (i === centerIdx) cls += ' center';
+            else if (i === targetIdx) cls += ' target';
+            html += `<div class="${cls}">${grid[i]}</div>`;
+        }
+        html += '</div>';
+        if (showNorth) {
+            html += '<div style="display:flex;justify-content:space-between;max-width:316px;margin:2px auto;font-size:0.85em;color:#667eea;">'
+                + '<span>← 西</span><span>东 →</span></div>';
+        }
+        scene.innerHTML = html;
+    }
+
+    function renderCompass(scene, targetDir, emoji) {
+        const positions = {
+            '北': { top: '15%', left: '50%', transform: 'translate(-50%,-50%)' },
+            '南': { top: '85%', left: '50%', transform: 'translate(-50%,-50%)' },
+            '东': { top: '50%', left: '85%', transform: 'translate(-50%,-50%)' },
+            '西': { top: '50%', left: '15%', transform: 'translate(-50%,-50%)' },
+            '东北': { top: '22%', left: '78%', transform: 'translate(-50%,-50%)' },
+            '东南': { top: '78%', left: '78%', transform: 'translate(-50%,-50%)' },
+            '西北': { top: '22%', left: '22%', transform: 'translate(-50%,-50%)' },
+            '西南': { top: '78%', left: '22%', transform: 'translate(-50%,-50%)' },
+        };
+        const pos = positions[targetDir];
+        scene.innerHTML = `
+            <div class="compass-scene">
+                <div class="compass-ring">
+                    <span class="compass-dir north">北</span>
+                    <span class="compass-dir south">南</span>
+                    <span class="compass-dir east">东</span>
+                    <span class="compass-dir west">西</span>
+                    <span class="compass-dir ne">东北</span>
+                    <span class="compass-dir nw">西北</span>
+                    <span class="compass-dir se">东南</span>
+                    <span class="compass-dir sw">西南</span>
+                    <span class="compass-center">🧭</span>
+                    <span class="compass-marker" style="top:${pos.top};left:${pos.left};transform:${pos.transform}">${emoji}</span>
+                </div>
+            </div>`;
+    }
+
+    function renderOptions(options, correctAnswer) {
+        const area = document.getElementById('optionsArea');
+        area.innerHTML = options.map(opt =>
+            `<button class="option-btn" onclick="checkAnswer(this,'${opt}','${correctAnswer}')">${opt}</button>`
+        ).join('');
+    }
+
+    // ============ 判题 ============
+    function checkAnswer(btn, selected, correct) {
+        if (answered) return;
+        answered = true;
+        const fb = document.getElementById('feedback');
+        const allBtns = document.querySelectorAll('.option-btn');
+
+        if (selected === correct) {
+            btn.classList.add('correct');
+            fb.textContent = '✅ 正确！太棒了！';
+            fb.className = 'feedback correct';
+            this.correct = ++correct; // just using the variable name collision trick - won't matter
+            // Actually, update global
+        } else {
+            btn.classList.add('wrong');
+            allBtns.forEach(b => { if (b.textContent === correct) b.classList.add('correct'); });
+            fb.textContent = `❌ 不对哦，正确答案是 ${correct}`;
+            fb.className = 'feedback wrong';
+        }
+
+        // Fix: update global counters properly
+        if (selected === correct || btn.classList.contains('correct') && !btn.classList.contains('wrong')) {
+            // handled below
+        }
+
+        allBtns.forEach(b => b.classList.add('disabled'));
+        document.getElementById('nextBtn').classList.add('show');
+    }
+
+    // Fix the answer checking - rewrite properly
+    document.getElementById('optionsArea').addEventListener('click', function(){}, true);
+
+    // Let me rewrite checkAnswer properly
+    window.checkAnswer = function(btn, selected, correctAns) {
+        if (answered) return;
+        answered = true;
+        const fb = document.getElementById('feedback');
+        const allBtns = document.querySelectorAll('.option-btn');
+
+        if (selected === correctAns) {
+            btn.classList.add('correct');
+            fb.textContent = '✅ 正确！太棒了！';
+            fb.className = 'feedback correct';
+            correct++;
+        } else {
+            btn.classList.add('wrong');
+            allBtns.forEach(b => { if (b.textContent === correctAns) b.classList.add('correct'); });
+            fb.textContent = `❌ 不对哦，正确答案是「${correctAns}」`;
+            fb.className = 'feedback wrong';
+            wrong++;
+        }
+
+        allBtns.forEach(b => b.classList.add('disabled'));
+        document.getElementById('nextBtn').classList.add('show');
+        updateScore();
+    };
+
+    function nextQuestion() {
+        questionIndex++;
+        if (questionIndex >= TOTAL_QUESTIONS) {
+            showResult();
+        } else {
+            generateQuestion();
+        }
+    }
+
+    function showResult() {
+        document.getElementById('gameArea').style.display = 'none';
+        const rp = document.getElementById('resultPage');
+        rp.style.display = 'block';
+        const rate = correct / TOTAL_QUESTIONS;
+        let emoji, title;
+        if (rate >= 0.9) { emoji = '🏆'; title = '方向大师！'; }
+        else if (rate >= 0.7) { emoji = '🌟'; title = '很棒！继续加油！'; }
+        else if (rate >= 0.5) { emoji = '💪'; title = '还不错，再练练！'; }
+        else { emoji = '📚'; title = '需要多练习哦！'; }
+
+        document.getElementById('resultEmoji').textContent = emoji;
+        document.getElementById('resultTitle').textContent = title;
+        document.getElementById('resultScore').textContent = `正确 ${correct} / ${TOTAL_QUESTIONS} 题`;
+        document.getElementById('resultDetail').textContent = `正确率 ${Math.round(rate * 100)}%，用时约 ${Math.round((Date.now() - startTime) / 1000)} 秒`;
+    }
+
+    // ============ 工具函数 ============
+    function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function pickDiffRandom(arr, exclude) {
+        let item;
+        do { item = pickRandom(arr); } while (exclude.includes(item));
+        return item;
+    }
+    function pickNRandom(arr, n) {
+        const shuffled = [...arr].sort(() => Math.random() - 0.5);
+        return shuffled.slice(0, n);
+    }
+    function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
+    function fillDistractors(grid, occupied, count) {
+        const available = [];
+        for (let i = 0; i < 25; i++) {
+            if (!occupied.includes(i) && !grid[i]) available.push(i);
+        }
+        const used = occupied.map(i => grid[i]);
+        const slots = shuffle(available).slice(0, count);
+        slots.forEach(idx => {
+            grid[idx] = pickDiffRandom(EMOJIS, used);
+            used.push(grid[idx]);
+        });
+    }
+
+    // ============ 启动 ============
+    let startTime = Date.now();
+    generateQuestion();
+    </script>
+</body>
+</html>
