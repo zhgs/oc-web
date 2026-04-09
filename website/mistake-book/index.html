@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>错题整理本</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f4f8; color: #333; min-height: 100vh; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; padding: 30px 0 20px; }
+        header h1 { font-size: 2em; color: #2d3748; }
+        header p { color: #718096; margin-top: 8px; font-size: 0.95em; }
+        .stats { display: flex; gap: 16px; justify-content: center; margin: 16px 0 24px; flex-wrap: wrap; }
+        .stat-item { background: #fff; border-radius: 12px; padding: 12px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-align: center; min-width: 100px; }
+        .stat-num { font-size: 1.6em; font-weight: 700; color: #4c6ef5; }
+        .stat-label { font-size: 0.8em; color: #999; margin-top: 2px; }
+
+        /* 添加表单 */
+        .add-form { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); margin-bottom: 24px; }
+        .add-form h2 { font-size: 1.2em; margin-bottom: 16px; color: #2d3748; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 0.9em; font-weight: 600; color: #4a5568; margin-bottom: 6px; }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 10px;
+            font-size: 0.95em; transition: border-color 0.2s; font-family: inherit; resize: vertical;
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: #4c6ef5; }
+        .form-group textarea { min-height: 80px; }
+        .form-row { display: flex; gap: 12px; }
+        .form-row .form-group { flex: 1; }
+        .btn { padding: 10px 24px; border: none; border-radius: 10px; font-size: 0.95em; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: #4c6ef5; color: #fff; }
+        .btn-primary:hover { background: #3b5bdb; transform: translateY(-1px); }
+        .btn-danger { background: #ff6b6b; color: #fff; font-size: 0.8em; padding: 6px 14px; }
+        .btn-danger:hover { background: #e03131; }
+        .btn-secondary { background: #e9ecef; color: #495057; font-size: 0.8em; padding: 6px 14px; }
+        .btn-secondary:hover { background: #dee2e6; }
+        .btn-group { display: flex; gap: 10px; margin-top: 8px; }
+
+        /* 筛选 */
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+        .filter-bar input { flex: 1; min-width: 180px; padding: 8px 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 0.9em; }
+        .filter-bar input:focus { outline: none; border-color: #4c6ef5; }
+        .filter-bar select { padding: 8px 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 0.9em; background: #fff; }
+
+        /* 错题卡片 */
+        .mistake-list { display: flex; flex-direction: column; gap: 16px; }
+        .mistake-card { background: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); border-left: 5px solid #4c6ef5; transition: transform 0.2s; }
+        .mistake-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .mistake-card.resolved { border-left-color: #51cf66; opacity: 0.75; }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .card-header h3 { font-size: 1em; color: #2d3748; flex: 1; line-height: 1.5; }
+        .card-meta { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+        .tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75em; font-weight: 600; }
+        .tag-subject { background: #e7f5ff; color: #1971c2; }
+        .tag-resolved { background: #d3f9d8; color: #2b8a3e; }
+        .card-section { margin-top: 12px; }
+        .card-section-title { font-size: 0.8em; font-weight: 700; color: #e03131; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .card-section-title.answer { color: #2b8a3e; }
+        .card-section p { font-size: 0.9em; color: #4a5568; line-height: 1.6; white-space: pre-wrap; }
+        .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid #f1f3f5; }
+        .card-date { font-size: 0.78em; color: #adb5bd; }
+        .card-actions { display: flex; gap: 8px; }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: #adb5bd; }
+        .empty-state .icon { font-size: 3em; margin-bottom: 12px; }
+        .empty-state p { font-size: 1em; }
+
+        /* 导出/导入 */
+        .toolbar { display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 16px; flex-wrap: wrap; }
+        .toolbar .btn { font-size: 0.82em; padding: 7px 16px; }
+
+        .back-link { display: inline-block; margin-bottom: 10px; color: #4c6ef5; text-decoration: none; font-size: 0.9em; }
+        .back-link:hover { text-decoration: underline; }
+
+        @media (max-width: 600px) {
+            .form-row { flex-direction: column; gap: 0; }
+            .container { padding: 12px; }
+            header h1 { font-size: 1.5em; }
+            .stats { gap: 10px; }
+            .stat-item { padding: 10px 16px; min-width: 80px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">← 返回导航</a>
+        <header>
+            <h1>📂 错题整理本</h1>
+            <p>记录题目、错误原因、正确答案 — 训练总结逻辑与复盘思维</p>
+        </header>
+
+        <div class="stats">
+            <div class="stat-item"><div class="stat-num" id="totalCount">0</div><div class="stat-label">总错题</div></div>
+            <div class="stat-item"><div class="stat-num" id="unresolvedCount">0</div><div class="stat-label">待复盘</div></div>
+            <div class="stat-item"><div class="stat-num" id="resolvedCount">0</div><div class="stat-label">已掌握</div></div>
+        </div>
+
+        <!-- 添加错题 -->
+        <div class="add-form">
+            <h2>✏️ 添加错题</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>科目</label>
+                    <select id="subject">
+                        <option value="语文">语文</option>
+                        <option value="数学" selected>数学</option>
+                        <option value="英语">英语</option>
+                        <option value="科学">科学</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>来源（选填）</label>
+                    <input type="text" id="source" placeholder="如：期中考试、课本P32">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>题目内容</label>
+                <textarea id="question" placeholder="把题目写在这里..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>❌ 错误原因</label>
+                <textarea id="reason" placeholder="为什么做错了？粗心？概念不清？审题不仔细？"></textarea>
+            </div>
+            <div class="form-group">
+                <label>✅ 正确答案 / 解题思路</label>
+                <textarea id="answer" placeholder="正确的做法是什么？关键步骤是什么？"></textarea>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="addMistake()">📌 保存错题</button>
+            </div>
+        </div>
+
+        <!-- 筛选 & 工具 -->
+        <div class="toolbar">
+            <button class="btn btn-secondary" onclick="exportData()">📤 导出</button>
+            <label class="btn btn-secondary" style="cursor:pointer;">📥 导入<input type="file" accept=".json" onchange="importData(event)" style="display:none;"></label>
+            <button class="btn btn-danger" onclick="clearAll()">🗑️ 清空</button>
+        </div>
+
+        <div class="filter-bar">
+            <input type="text" id="searchInput" placeholder="🔍 搜索题目或原因..." oninput="renderList()">
+            <select id="filterSubject" onchange="renderList()">
+                <option value="">全部科目</option>
+                <option value="语文">语文</option>
+                <option value="数学">数学</option>
+                <option value="英语">英语</option>
+                <option value="科学">科学</option>
+                <option value="其他">其他</option>
+            </select>
+            <select id="filterStatus" onchange="renderList()">
+                <option value="">全部状态</option>
+                <option value="unresolved">待复盘</option>
+                <option value="resolved">已掌握</option>
+            </select>
+        </div>
+
+        <!-- 错题列表 -->
+        <div class="mistake-list" id="mistakeList"></div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'mistake-book-data';
+
+        function loadData() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+            catch { return []; }
+        }
+        function saveData(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+        function addMistake() {
+            const q = document.getElementById('question').value.trim();
+            const reason = document.getElementById('reason').value.trim();
+            const answer = document.getElementById('answer').value.trim();
+            if (!q) { alert('请填写题目内容'); return; }
+            if (!reason) { alert('请填写错误原因'); return; }
+            if (!answer) { alert('请填写正确答案'); return; }
+
+            const data = loadData();
+            data.unshift({
+                id: Date.now(),
+                subject: document.getElementById('subject').value,
+                source: document.getElementById('source').value.trim(),
+                question: q,
+                reason: reason,
+                answer: answer,
+                resolved: false,
+                createdAt: new Date().toLocaleString('zh-CN')
+            });
+            saveData(data);
+            document.getElementById('question').value = '';
+            document.getElementById('reason').value = '';
+            document.getElementById('answer').value = '';
+            document.getElementById('source').value = '';
+            renderList();
+        }
+
+        function toggleResolved(id) {
+            const data = loadData();
+            const item = data.find(m => m.id === id);
+            if (item) { item.resolved = !item.resolved; saveData(data); renderList(); }
+        }
+
+        function deleteMistake(id) {
+            if (!confirm('确定删除这条错题？')) return;
+            const data = loadData().filter(m => m.id !== id);
+            saveData(data);
+            renderList();
+        }
+
+        function renderList() {
+            const data = loadData();
+            const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+            const subjectFilter = document.getElementById('filterSubject').value;
+            const statusFilter = document.getElementById('filterStatus').value;
+
+            const filtered = data.filter(m => {
+                if (keyword && !m.question.toLowerCase().includes(keyword) && !m.reason.toLowerCase().includes(keyword)) return false;
+                if (subjectFilter && m.subject !== subjectFilter) return false;
+                if (statusFilter === 'resolved' && !m.resolved) return false;
+                if (statusFilter === 'unresolved' && m.resolved) return false;
+                return true;
+            });
+
+            const list = document.getElementById('mistakeList');
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>还没有错题记录，快去添加吧</p></div>';
+            } else {
+                list.innerHTML = filtered.map(m => `
+                    <div class="mistake-card ${m.resolved ? 'resolved' : ''}">
+                        <div class="card-header">
+                            <h3>${escHtml(m.question)}</h3>
+                            <div class="card-meta">
+                                <span class="tag tag-subject">${escHtml(m.subject)}</span>
+                                ${m.resolved ? '<span class="tag tag-resolved">已掌握</span>' : ''}
+                            </div>
+                        </div>
+                        ${m.source ? '<div style="font-size:0.8em;color:#adb5bd;margin-bottom:4px;">📎 ' + escHtml(m.source) + '</div>' : ''}
+                        <div class="card-section">
+                            <div class="card-section-title">❌ 错误原因</div>
+                            <p>${escHtml(m.reason)}</p>
+                        </div>
+                        <div class="card-section">
+                            <div class="card-section-title answer">✅ 正确答案</div>
+                            <p>${escHtml(m.answer)}</p>
+                        </div>
+                        <div class="card-footer">
+                            <span class="card-date">${escHtml(m.createdAt)}</span>
+                            <div class="card-actions">
+                                <button class="btn btn-secondary" onclick="toggleResolved(${m.id})">${m.resolved ? '↩️ 重新复盘' : '✅ 标记掌握'}</button>
+                                <button class="btn btn-danger" onclick="deleteMistake(${m.id})">删除</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // 更新统计
+            document.getElementById('totalCount').textContent = data.length;
+            document.getElementById('resolvedCount').textContent = data.filter(m => m.resolved).length;
+            document.getElementById('unresolvedCount').textContent = data.filter(m => !m.resolved).length;
+        }
+
+        function escHtml(str) {
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        function exportData() {
+            const data = loadData();
+            if (!data.length) { alert('没有数据可导出'); return; }
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = '错题整理本_' + new Date().toISOString().slice(0, 10) + '.json';
+            a.click();
+        }
+
+        function importData(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                try {
+                    const imported = JSON.parse(ev.target.result);
+                    if (!Array.isArray(imported)) throw new Error();
+                    const data = loadData();
+                    const existIds = new Set(data.map(m => m.id));
+                    let count = 0;
+                    imported.forEach(m => { if (!existIds.has(m.id)) { data.unshift(m); count++; } });
+                    saveData(data);
+                    renderList();
+                    alert('导入成功，新增 ' + count + ' 条错题');
+                } catch { alert('文件格式不正确'); }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        }
+
+        function clearAll() {
+            if (!confirm('确定清空所有错题？此操作不可恢复！')) return;
+            saveData([]);
+            renderList();
+        }
+
+        renderList();
+    </script>
+</body>
+</html>
