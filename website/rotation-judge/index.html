@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图形旋转方向判断 - 空间逻辑训练</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            color: #fff;
+            padding: 20px 0;
+        }
+        header h1 { font-size: 1.8em; margin-bottom: 6px; }
+        header p { opacity: 0.85; font-size: 0.95em; }
+        .back-link {
+            display: inline-block;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+        .back-link:hover { color: #fff; }
+
+        /* 控制面板 */
+        .controls {
+            background: #fff;
+            border-radius: 16px;
+            padding: 18px 20px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .controls label { font-weight: 600; font-size: 0.9em; color: #444; }
+        .controls select, .controls button {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .controls select:hover, .controls button:hover {
+            border-color: #f5576c;
+        }
+        .controls button {
+            background: #f5576c;
+            color: #fff;
+            border: none;
+            font-weight: 600;
+        }
+        .controls button:hover {
+            background: #e0465a;
+        }
+        .stats {
+            margin-left: auto;
+            display: flex;
+            gap: 16px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .stats span { font-weight: 600; color: #f5576c; }
+
+        /* 游戏区域 */
+        .game-area {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .question-text {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .shape-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        .shape-box {
+            width: 140px;
+            height: 140px;
+            border: 3px dashed #ccc;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            position: relative;
+        }
+        .shape-box.original {
+            border-color: #4CAF50;
+            background: #E8F5E9;
+        }
+        .shape-box.rotated {
+            border-color: #2196F3;
+            background: #E3F2FD;
+        }
+        .shape-box svg {
+            width: 80px;
+            height: 80px;
+        }
+        .arrow {
+            font-size: 2em;
+            color: #666;
+        }
+        .rotation-info {
+            font-size: 0.85em;
+            color: #888;
+            margin-top: 8px;
+        }
+
+        /* 答案按钮 */
+        .answer-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 24px;
+        }
+        .answer-btn {
+            padding: 14px 36px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+        .answer-btn.clockwise {
+            background: #FF9800;
+            color: #fff;
+        }
+        .answer-btn.clockwise:hover { background: #F57C00; }
+        .answer-btn.counter-clockwise {
+            background: #9C27B0;
+            color: #fff;
+        }
+        .answer-btn.counter-clockwise:hover { background: #7B1FA2; }
+        .answer-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* 结果提示 */
+        .result {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 600;
+            display: none;
+        }
+        .result.correct {
+            background: #C8E6C9;
+            color: #2E7D32;
+            display: block;
+        }
+        .result.wrong {
+            background: #FFCDD2;
+            color: #C62828;
+            display: block;
+        }
+
+        /* 难度说明 */
+        .difficulty-info {
+            background: #fff3cd;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-top: 16px;
+            font-size: 0.9em;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">← 返回导航</a>
+        
+        <header>
+            <h1>🔁 图形旋转方向判断</h1>
+            <p>观察图形旋转后的状态，判断是顺时针还是逆时针旋转</p>
+        </header>
+        
+        <div class="controls">
+            <label>难度：</label>
+            <select id="difficulty">
+                <option value="easy">简单 (90°)</option>
+                <option value="medium" selected>中等 (45°/135°)</option>
+                <option value="hard">困难 (任意角度)</option>
+            </select>
+            <button onclick="generateQuestion()">换一道题</button>
+            <div class="stats">
+                <div>正确: <span id="correctCount">0</span></div>
+                <div>错误: <span id="wrongCount">0</span></div>
+                <div>正确率: <span id="accuracy">0%</span></div>
+            </div>
+        </div>
+        
+        <div class="game-area">
+            <div class="question-text">请判断：图形A旋转到图形B是什么方向？</div>
+            
+            <div class="shape-container">
+                <div class="shape-box original">
+                    <svg id="originalShape" viewBox="0 0 100 100"></svg>
+                    <div class="rotation-info">图形A<br>(原始)</div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="shape-box rotated">
+                    <svg id="rotatedShape" viewBox="0 0 100 100"></svg>
+                    <div class="rotation-info">图形B<br>(旋转后)</div>
+                </div>
+            </div>
+            
+            <div class="answer-buttons">
+                <button class="answer-btn clockwise" onclick="checkAnswer(true)">🔃 顺时针</button>
+                <button class="answer-btn counter-clockwise" onclick="checkAnswer(false)">🔄 逆时针</button>
+            </div>
+            
+            <div class="result" id="result"></div>
+        </div>
+        
+        <div class="difficulty-info">
+            <strong>💡 提示：</strong>
+            观察图形某个特征点（如缺口、箭头、角落）的旋转方向。顺时针旋转时，特征点向右上方向移动；逆时针旋转时，特征点向左上方向移动。
+        </div>
+    </div>
+
+    <script>
+        // 图形数据：各种带方向特征的图形
+        const shapes = [
+            // 带箭头的图形
+            { path: 'M50 10 L70 40 L60 40 L60 90 L40 90 L40 40 L30 40 Z', fill: '#FF5722' },
+            // 带缺口的正方形
+            { path: 'M20 20 L80 20 L80 80 L50 80 L50 50 L20 50 Z', fill: '#4CAF50' },
+            // 箭头朝右
+            { path: 'M20 30 L60 50 L20 70 L30 50 Z M60 30 L90 50 L60 70 L70 50 Z', fill: '#2196F3' },
+            // 带把杯子
+            { path: 'M25 20 L75 20 L75 80 L25 80 Z M75 35 L90 35 L90 55 L75 55 Z', fill: '#FF9800' },
+            // L形
+            { path: 'M20 20 L50 20 L50 50 L80 50 L80 80 L20 80 Z', fill: '#9C27B0' },
+            // 三角形带缺口
+            { path: 'M50 15 L85 80 L50 65 L15 80 Z', fill: '#00BCD4' },
+            // 梯形
+            { path: 'M30 30 L70 30 L85 80 L15 80 Z', fill: '#E91E63' },
+            // 凹字形
+            { path: 'M20 20 L80 20 L80 50 L65 50 L65 80 L35 80 L35 50 L20 50 Z', fill: '#795548' },
+            // 箭头朝上
+            { path: 'M50 15 L80 45 L55 45 L55 85 L45 85 L45 45 L20 45 Z', fill: '#607D8B' },
+            // 数字7
+            { path: 'M25 20 L75 20 L75 45 L45 45 L45 80 L25 80 Z', fill: '#3F51B5' },
+            // 箭头朝左
+            { path: 'M80 30 L40 50 L80 70 L70 50 Z M80 30 L50 30 L50 70 L80 70 Z', fill: '#009688' },
+            // 山形
+            { path: 'M15 80 L40 30 L50 50 L60 30 L85 80 Z', fill: '#8BC34A' }
+        ];
+
+        let currentRotation = 0;
+        let correctAnswer = true; // true=顺时针, false=逆时针
+        let correctCount = 0;
+        let wrongCount = 0;
+
+        function getRotationAngles(difficulty) {
+            switch(difficulty) {
+                case 'easy': return [90, 180, 270];
+                case 'medium': return [45, 90, 135, 225, 315];
+                default: return [30, 45, 60, 90, 120, 135, 150, 180, 210, 225, 240, 270, 300, 315, 330];
+            }
+        }
+
+        function generateQuestion() {
+            const difficulty = document.getElementById('difficulty').value;
+            const angles = getRotationAngles(difficulty);
+            
+            // 随机选择图形
+            const shapeIndex = Math.floor(Math.random() * shapes.length);
+            const shape = shapes[shapeIndex];
+            
+            // 随机选择旋转角度
+            currentRotation = angles[Math.floor(Math.random() * angles.length)];
+            
+            // 随机决定旋转方向
+            correctAnswer = Math.random() > 0.5;
+            
+            // 实际旋转角度（考虑方向）
+            const actualRotation = correctAnswer ? currentRotation : -currentRotation;
+            
+            // 生成原始图形SVG
+            const originalSVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <path d="${shape.path}" fill="${shape.fill}" stroke="#333" stroke-width="2"/>
+            </svg>`;
+            
+            // 生成旋转后图形SVG
+            const rotatedSVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" 
+                style="transform: rotate(${actualRotation}deg); transition: transform 0.3s;">
+                <path d="${shape.path}" fill="${shape.fill}" stroke="#333" stroke-width="2"/>
+            </svg>`;
+            
+            document.getElementById('originalShape').innerHTML = originalSVG;
+            document.getElementById('rotatedShape').innerHTML = rotatedSVG;
+            
+            // 隐藏结果
+            document.getElementById('result').style.display = 'none';
+        }
+
+        function checkAnswer(userAnswer) {
+            const resultEl = document.getElementById('result');
+            
+            if (userAnswer === correctAnswer) {
+                correctCount++;
+                resultEl.className = 'result correct';
+                resultEl.textContent = '🎉 正确！' + (correctAnswer ? '顺时针' : '逆时针') + '旋转 ' + currentRotation + '°';
+            } else {
+                wrongCount++;
+                resultEl.className = 'result wrong';
+                resultEl.textContent = '❌ 错误！正确答案是' + (correctAnswer ? '顺时针' : '逆时针') + '旋转 ' + currentRotation + '°';
+            }
+            
+            updateStats();
+        }
+
+        function updateStats() {
+            document.getElementById('correctCount').textContent = correctCount;
+            document.getElementById('wrongCount').textContent = wrongCount;
+            const total = correctCount + wrongCount;
+            const accuracy = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+            document.getElementById('accuracy').textContent = accuracy + '%';
+        }
+
+        // 初始化
+        generateQuestion();
+        
+        // 难度改变时重新生成
+        document.getElementById('difficulty').addEventListener('change', generateQuestion);
+    </script>
+</body>
+</html>
