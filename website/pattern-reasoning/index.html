@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔺 图形规律推理</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header {
+            text-align: center;
+            padding: 30px 20px 10px;
+        }
+        .header h1 { font-size: 2em; margin-bottom: 8px; }
+        .header p { opacity: 0.8; font-size: 1em; }
+        .back-link {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            font-size: 1em;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: white; }
+
+        /* Difficulty selector */
+        .difficulty-bar {
+            display: flex;
+            gap: 12px;
+            margin: 16px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .diff-btn {
+            padding: 8px 22px;
+            border-radius: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            background: transparent;
+            color: white;
+            font-size: 0.95em;
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+        .diff-btn:hover { background: rgba(255,255,255,0.15); }
+        .diff-btn.active {
+            background: rgba(102,126,234,0.7);
+            border-color: rgba(102,126,234,0.9);
+        }
+
+        /* Stats */
+        .stats {
+            display: flex;
+            gap: 24px;
+            margin: 10px 0 16px;
+            font-size: 0.95em;
+            opacity: 0.85;
+        }
+        .stats span { display: flex; align-items: center; gap: 6px; }
+
+        /* Category badges */
+        .category-badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 12px;
+            font-size: 0.82em;
+            margin-bottom: 10px;
+        }
+        .cat-color { background: rgba(255,107,107,0.5); }
+        .cat-shape { background: rgba(78,205,196,0.5); }
+        .cat-count { background: rgba(255,217,61,0.45); color: #fff; }
+        .cat-rotation { background: rgba(162,155,254,0.5); }
+
+        /* Game area */
+        .game-container {
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 20px;
+            padding: 28px;
+            max-width: 680px;
+            width: 92%;
+            margin-bottom: 30px;
+        }
+        .question-label {
+            font-size: 1.1em;
+            margin-bottom: 14px;
+            text-align: center;
+        }
+
+        /* SVG sequence */
+        .sequence-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .seq-cell {
+            width: 72px;
+            height: 72px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid rgba(255,255,255,0.12);
+        }
+        .seq-cell.question-mark {
+            border: 2px dashed rgba(255,217,61,0.7);
+            font-size: 1.8em;
+            color: rgba(255,217,61,0.9);
+        }
+        .seq-arrow {
+            font-size: 1.3em;
+            opacity: 0.5;
+        }
+
+        /* Options */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .option-btn {
+            background: rgba(255,255,255,0.07);
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 14px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.25s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 80px;
+        }
+        .option-btn:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.35); }
+        .option-btn.correct {
+            border-color: #4ecdc4;
+            background: rgba(78,205,196,0.25);
+            animation: pulse-correct 0.5s;
+        }
+        .option-btn.wrong {
+            border-color: #ff6b6b;
+            background: rgba(255,107,107,0.2);
+            animation: shake 0.4s;
+        }
+        @keyframes pulse-correct {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.06); }
+            100% { transform: scale(1); }
+        }
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+
+        /* Feedback */
+        .feedback {
+            text-align: center;
+            margin-top: 16px;
+            min-height: 28px;
+            font-size: 1em;
+            transition: opacity 0.3s;
+        }
+        .feedback.success { color: #4ecdc4; }
+        .feedback.error { color: #ff6b6b; }
+
+        /* Next button */
+        .next-btn {
+            display: none;
+            margin: 18px auto 0;
+            padding: 10px 36px;
+            border-radius: 22px;
+            border: none;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .next-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
+        .next-btn.show { display: block; }
+
+        /* Explanation */
+        .explanation {
+            display: none;
+            margin-top: 14px;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 10px;
+            font-size: 0.9em;
+            line-height: 1.5;
+            opacity: 0.85;
+        }
+        .explanation.show { display: block; }
+
+        /* Responsive */
+        @media (max-width: 520px) {
+            .seq-cell { width: 56px; height: 56px; }
+            .options-grid { grid-template-columns: repeat(2, 1fr); }
+            .game-container { padding: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <a class="back-link" href="../index.html">← 返回导航</a>
+
+    <div class="header">
+        <h1>🔺 图形规律推理</h1>
+        <p>观察图形序列，找出隐藏的规律</p>
+    </div>
+
+    <div class="difficulty-bar">
+        <button class="diff-btn active" data-level="basic">⭐ 基础</button>
+        <button class="diff-btn" data-level="advanced">⭐⭐ 进阶</button>
+        <button class="diff-btn" data-level="challenge">⭐⭐⭐ 挑战</button>
+    </div>
+
+    <div class="stats">
+        <span>📊 得分: <strong id="score">0</strong></span>
+        <span>📝 第 <strong id="qIndex">1</strong> 题</span>
+        <span>✅ 连对: <strong id="streak">0</strong></span>
+    </div>
+
+    <div class="game-container">
+        <div id="catBadge" class="category-badge cat-color">颜色规律</div>
+        <div class="question-label" id="questionLabel">找出下一个图形</div>
+        <div class="sequence-row" id="sequenceRow"></div>
+        <div class="options-grid" id="optionsGrid"></div>
+        <div class="feedback" id="feedback"></div>
+        <div class="explanation" id="explanation"></div>
+        <button class="next-btn" id="nextBtn" onclick="nextQuestion()">下一题 →</button>
+    </div>
+
+<script>
+// ─── Shape drawing helpers ───
+const COLORS = {
+    red: '#ff6b6b', blue: '#667eea', green: '#4ecdc4', yellow: '#ffd93d',
+    purple: '#a29bfe', orange: '#f0932b', pink: '#fd79a8', white: '#ffffff'
+};
+
+function svgWrap(inner, size = 52) {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+}
+
+function drawShape(shape, color, size = 1, rotation = 0) {
+    const c = COLORS[color] || color;
+    const cx = 26, cy = 26;
+    let s = '';
+    const sc = 0.35 * size;
+
+    switch (shape) {
+        case 'circle':
+            s = `<circle cx="${cx}" cy="${cy}" r="${18 * sc}" fill="${c}"/>`;
+            break;
+        case 'square':
+            const half = 16 * sc;
+            s = `<rect x="${cx - half}" y="${cy - half}" width="${half * 2}" height="${half * 2}" fill="${c}" rx="2"/>`;
+            break;
+        case 'triangle':
+            const h = 18 * sc;
+            s = `<polygon points="${cx},${cy - h} ${cx - h * 0.95},${cy + h * 0.7} ${cx + h * 0.95},${cy + h * 0.7}" fill="${c}"/>`;
+            break;
+        case 'diamond':
+            const d = 18 * sc;
+            s = `<polygon points="${cx},${cy - d} ${cx + d * 0.7},${cy} ${cx},${cy + d} ${cx - d * 0.7},${cy}" fill="${c}"/>`;
+            break;
+        case 'star':
+            s = drawStar(cx, cy, 16 * sc, 7 * sc, 5, c);
+            break;
+        case 'hexagon':
+            s = drawHexagon(cx, cy, 16 * sc, c);
+            break;
+        case 'arrow':
+            const a = 16 * sc;
+            s = `<polygon points="${cx},${cy - a} ${cx + a * 0.6},${cy + a * 0.3} ${cx + a * 0.2},${cy + a * 0.3} ${cx + a * 0.2},${cy + a} ${cx - a * 0.2},${cy + a} ${cx - a * 0.2},${cy + a * 0.3} ${cx - a * 0.6},${cy + a * 0.3}" fill="${c}"/>`;
+            break;
+        case 'cross':
+            const w = 6 * sc, l = 16 * sc;
+            s = `<rect x="${cx - w}" y="${cy - l}" width="${w * 2}" height="${l * 2}" fill="${c}" rx="2"/>
+                 <rect x="${cx - l}" y="${cy - w}" width="${l * 2}" height="${w * 2}" fill="${c}" rx="2"/>`;
+            break;
+    }
+    const rot = rotation ? `transform="rotate(${rotation} ${cx} ${cy})"` : '';
+    return svgWrap(`<g ${rot}>${s}</g>`);
+}
+
+function drawStar(cx, cy, R, r, n, fill) {
+    let pts = [];
+    for (let i = 0; i < n * 2; i++) {
+        const radius = i % 2 === 0 ? R : r;
+        const angle = (Math.PI / n) * i - Math.PI / 2;
+        pts.push(`${cx + radius * Math.cos(angle)},${cy + radius * Math.sin(angle)}`);
+    }
+    return `<polygon points="${pts.join(' ')}" fill="${fill}"/>`;
+}
+
+function drawHexagon(cx, cy, r, fill) {
+    let pts = [];
+    for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i - Math.PI / 6;
+        pts.push(`${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`);
+    }
+    return `<polygon points="${pts.join(' ')}" fill="${fill}"/>`;
+}
+
+// Draw multiple small shapes (for count patterns)
+function drawMulti(shape, color, count) {
+    const positions = {
+        1: [[26, 26]],
+        2: [[16, 26], [36, 26]],
+        3: [[26, 14], [14, 36], [38, 36]],
+        4: [[14, 14], [38, 14], [14, 38], [38, 38]],
+        5: [[14, 14], [38, 14], [26, 26], [14, 38], [38, 38]],
+        6: [[14, 12], [38, 12], [14, 26], [38, 26], [14, 40], [38, 40]]
+    };
+    const c = COLORS[color] || color;
+    const pos = positions[Math.min(count, 6)] || positions[6];
+    let inner = '';
+    const r = count <= 2 ? 9 : count <= 4 ? 7 : 6;
+    for (let i = 0; i < Math.min(count, 6); i++) {
+        const [px, py] = pos[i];
+        switch (shape) {
+            case 'circle':
+                inner += `<circle cx="${px}" cy="${py}" r="${r}" fill="${c}"/>`;
+                break;
+            case 'square':
+                inner += `<rect x="${px - r}" y="${py - r}" width="${r * 2}" height="${r * 2}" fill="${c}" rx="1"/>`;
+                break;
+            case 'triangle':
+                inner += `<polygon points="${px},${py - r} ${px - r},${py + r * 0.6} ${px + r},${py + r * 0.6}" fill="${c}"/>`;
+                break;
+            case 'star':
+                inner += drawStar(px, py, r, r * 0.4, 5, c);
+                break;
+            default:
+                inner += `<circle cx="${px}" cy="${py}" r="${r}" fill="${c}"/>`;
+        }
+    }
+    return svgWrap(inner);
+}
+
+// ─── Question Generators ───
+const SHAPES = ['circle', 'square', 'triangle', 'diamond', 'star', 'hexagon'];
+const COLOR_NAMES = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink'];
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function shuffle(arr) { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+// COLOR PATTERN generators
+function genColorPattern(level) {
+    const shape = pick(SHAPES);
+    if (level === 'basic') {
+        // Simple AB repeating: red blue red blue ?
+        const c1 = pick(COLOR_NAMES);
+        let c2 = pick(COLOR_NAMES.filter(c => c !== c1));
+        const seq = [c1, c2, c1, c2];
+        const answer = c1;
+        const explanation = `颜色按 ${c1}-${c2} 交替重复，下一个应该是 ${answer}`;
+        return buildQ('color', shape, seq, answer, explanation, level);
+    } else if (level === 'advanced') {
+        // ABC repeating
+        const cs = shuffle(COLOR_NAMES).slice(0, 3);
+        const seq = [...cs, ...cs];
+        const answer = cs[0];
+        const explanation = `颜色按 ${cs.join('-')} 循环重复，下一个是 ${cs[0]}`;
+        return buildQ('color', shape, seq, answer, explanation, level);
+    } else {
+        // Gradual shift through palette
+        const start = Math.floor(Math.random() * 4);
+        const seq = COLOR_NAMES.slice(start, start + 4);
+        const answer = COLOR_NAMES[start + 4];
+        const explanation = `颜色按顺序渐变，下一个是 ${answer}`;
+        return buildQ('color', shape, seq, answer, explanation, level);
+    }
+}
+
+function buildQ(category, shape, colorSeq, answerColor, explanation, level) {
+    const sequence = colorSeq.map(c => ({ shape, color: c, count: 1, rotation: 0 }));
+    const answerItem = { shape, color: answerColor, count: 1, rotation: 0 };
+    // Distractors: wrong colors
+    const others = COLOR_NAMES.filter(c => c !== answerColor);
+    const distractors = shuffle(others).slice(0, 3).map(c => ({ shape, color: c, count: 1, rotation: 0 }));
+    return { category, sequence, answer: answerItem, distractors, explanation };
+}
+
+// SHAPE PATTERN generators
+function genShapePattern(level) {
+    const color = pick(COLOR_NAMES);
+    if (level === 'basic') {
+        const s1 = pick(SHAPES);
+        let s2 = pick(SHAPES.filter(s => s !== s1));
+        const seq = [s1, s2, s1, s2];
+        const answer = s1;
+        const explanation = `形状按 ${s1}-${s2} 交替，下一个是 ${answer}`;
+        return buildShapeQ('shape', color, seq, answer, explanation);
+    } else if (level === 'advanced') {
+        const ss = shuffle(SHAPES).slice(0, 3);
+        const seq = [...ss, ...ss];
+        const answer = ss[0];
+        const explanation = `形状按 ${ss.join('-')} 循环，下一个是 ${answer}`;
+        return buildShapeQ('shape', color, seq, answer, explanation);
+    } else {
+        // Progressive: each shape appears then a new one
+        const ss = shuffle(SHAPES).slice(0, 5);
+        const seq = ss.slice(0, 4);
+        const answer = ss[4];
+        const explanation = `每次出现不同形状，按序列规律下一个是 ${answer}`;
+        return buildShapeQ('shape', color, seq, answer, explanation);
+    }
+}
+
+function buildShapeQ(category, color, shapeSeq, answerShape, explanation) {
+    const sequence = shapeSeq.map(s => ({ shape: s, color, count: 1, rotation: 0 }));
+    const answerItem = { shape: answerShape, color, count: 1, rotation: 0 };
+    const others = SHAPES.filter(s => s !== answerShape);
+    const distractors = shuffle(others).slice(0, 3).map(s => ({ shape: s, color, count: 1, rotation: 0 }));
+    return { category, sequence, answer: answerItem, distractors, explanation };
+}
+
+// COUNT PATTERN generators
+function genCountPattern(level) {
+    const shape = pick(['circle', 'square', 'triangle', 'star']);
+    const color = pick(COLOR_NAMES);
+    if (level === 'basic') {
+        // +1 each step
+        const seq = [1, 2, 3, 4];
+        const answer = 5;
+        const explanation = `数量每次+1，下一个是 ${answer} 个`;
+        return buildCountQ('count', shape, color, seq, answer, explanation);
+    } else if (level === 'advanced') {
+        // +2 each step
+        const seq = [1, 3, 5];
+        const answer = 7;
+        const explanation = `数量每次+2（奇数递增），下一个是 ${answer} 个`;
+        return buildCountQ('count', shape, color, seq.slice(0, 3), answer, explanation);
+    } else {
+        // Pattern: 1,2,4 (doubling)
+        const seq = [1, 2, 4];
+        const answer = 8;  // but we cap display at 6
+        const explanation = `数量每次翻倍（×2），下一个应该是 8 个`;
+        return buildCountQ('count', shape, color, seq, Math.min(answer, 6), explanation);
+    }
+}
+
+function buildCountQ(category, shape, color, countSeq, answerCount, explanation) {
+    const sequence = countSeq.map(n => ({ shape, color, count: n, rotation: 0 }));
+    const answerItem = { shape, color, count: answerCount, rotation: 0 };
+    // Distractors: nearby counts
+    const candidates = [1, 2, 3, 4, 5, 6].filter(n => n !== answerCount);
+    const distNums = shuffle(candidates).slice(0, 3);
+    const distractors = distNums.map(n => ({ shape, color, count: n, rotation: 0 }));
+    return { category, sequence, answer: answerItem, distractors, explanation };
+}
+
+// ROTATION PATTERN generators
+function genRotationPattern(level) {
+    const shape = pick(['triangle', 'arrow', 'diamond', 'star']);
+    const color = pick(COLOR_NAMES);
+    if (level === 'basic') {
+        // +90 each step
+        const seq = [0, 90, 180, 270];
+        const answer = 360; // = 0
+        const explanation = `图形每次顺时针旋转90°，下一个回到起始位置（360°=0°）`;
+        return buildRotQ('rotation', shape, color, seq, answer % 360, explanation);
+    } else if (level === 'advanced') {
+        // +45 each step
+        const seq = [0, 45, 90, 135];
+        const answer = 180;
+        const explanation = `图形每次顺时针旋转45°，下一个是180°`;
+        return buildRotQ('rotation', shape, color, seq, answer, explanation);
+    } else {
+        // +60 each step
+        const seq = [0, 60, 120, 180, 240];
+        const answer = 300;
+        const explanation = `图形每次顺时针旋转60°，下一个是300°`;
+        return buildRotQ('rotation', shape, color, seq, answer, explanation);
+    }
+}
+
+function buildRotQ(category, shape, color, rotSeq, answerRot, explanation) {
+    const sequence = rotSeq.map(r => ({ shape, color, count: 1, rotation: r }));
+    const answerItem = { shape, color, count: 1, rotation: answerRot };
+    // Distractors: wrong rotations
+    const allRots = [0, 30, 45, 60, 90, 120, 135, 150, 180, 210, 225, 240, 270, 300, 315, 330];
+    const wrongRots = allRots.filter(r => r !== answerRot);
+    const distRots = shuffle(wrongRots).slice(0, 3);
+    const distractors = distRots.map(r => ({ shape, color, count: 1, rotation: r }));
+    return { category, sequence, answer: answerItem, distractors, explanation };
+}
+
+// ─── Rendering ───
+function renderItem(item) {
+    if (item.count > 1) {
+        return drawMulti(item.shape, item.color, item.count);
+    }
+    return drawShape(item.shape, item.color, item.count, item.rotation);
+}
+
+// ─── Game State ───
+let currentLevel = 'basic';
+let score = 0;
+let qIndex = 1;
+let streak = 0;
+let answered = false;
+let currentQ = null;
+
+const generators = [genColorPattern, genShapePattern, genCountPattern, genRotationPattern];
+const catNames = { color: '颜色规律', shape: '形状规律', count: '数量规律', rotation: '旋转规律' };
+const catClasses = { color: 'cat-color', shape: 'cat-shape', count: 'cat-count', rotation: 'cat-rotation' };
+
+function generateQuestion() {
+    const gen = pick(generators);
+    return gen(currentLevel);
+}
+
+function renderQuestion() {
+    answered = false;
+    currentQ = generateQuestion();
+    const q = currentQ;
+
+    // Badge
+    const badge = document.getElementById('catBadge');
+    badge.textContent = catNames[q.category];
+    badge.className = 'category-badge ' + catClasses[q.category];
+
+    // Sequence
+    const row = document.getElementById('sequenceRow');
+    row.innerHTML = '';
+    q.sequence.forEach((item, i) => {
+        const cell = document.createElement('div');
+        cell.className = 'seq-cell';
+        cell.innerHTML = renderItem(item);
+        row.appendChild(cell);
+        if (i < q.sequence.length - 1) {
+            const arrow = document.createElement('span');
+            arrow.className = 'seq-arrow';
+            arrow.textContent = '→';
+            row.appendChild(arrow);
+        }
+    });
+    // Arrow + question mark
+    const arrow = document.createElement('span');
+    arrow.className = 'seq-arrow';
+    arrow.textContent = '→';
+    row.appendChild(arrow);
+    const qCell = document.createElement('div');
+    qCell.className = 'seq-cell question-mark';
+    qCell.textContent = '?';
+    row.appendChild(qCell);
+
+    // Options
+    const grid = document.getElementById('optionsGrid');
+    grid.innerHTML = '';
+    const options = shuffle([q.answer, ...q.distractors]);
+    options.forEach((opt, i) => {
+        const btn = document.createElement('div');
+        btn.className = 'option-btn';
+        btn.innerHTML = renderItem(opt);
+        btn.onclick = () => selectOption(btn, opt, q.answer);
+        grid.appendChild(btn);
+    });
+
+    // Reset feedback
+    document.getElementById('feedback').textContent = '';
+    document.getElementById('feedback').className = 'feedback';
+    document.getElementById('explanation').className = 'explanation';
+    document.getElementById('nextBtn').className = 'next-btn';
+}
+
+function itemsEqual(a, b) {
+    return a.shape === b.shape && a.color === b.color && a.count === b.count && a.rotation === b.rotation;
+}
+
+function selectOption(btn, selected, correct) {
+    if (answered) return;
+    if (itemsEqual(selected, correct)) {
+        answered = true;
+        btn.classList.add('correct');
+        score += currentLevel === 'basic' ? 10 : currentLevel === 'advanced' ? 20 : 30;
+        streak++;
+        document.getElementById('score').textContent = score;
+        document.getElementById('streak').textContent = streak;
+        document.getElementById('feedback').textContent = '🎉 正确！太棒了！';
+        document.getElementById('feedback').className = 'feedback success';
+        document.getElementById('explanation').textContent = '💡 ' + currentQ.explanation;
+        document.getElementById('explanation').className = 'explanation show';
+        document.getElementById('nextBtn').className = 'next-btn show';
+    } else {
+        btn.classList.add('wrong');
+        streak = 0;
+        document.getElementById('streak').textContent = streak;
+        document.getElementById('feedback').textContent = '❌ 不对哦，再想想！';
+        document.getElementById('feedback').className = 'feedback error';
+        setTimeout(() => { btn.classList.remove('wrong'); }, 500);
+    }
+}
+
+function nextQuestion() {
+    qIndex++;
+    document.getElementById('qIndex').textContent = qIndex;
+    renderQuestion();
+}
+
+// ─── Difficulty buttons ───
+document.querySelectorAll('.diff-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentLevel = btn.dataset.level;
+        // Reset
+        score = 0; qIndex = 1; streak = 0;
+        document.getElementById('score').textContent = 0;
+        document.getElementById('qIndex').textContent = 1;
+        document.getElementById('streak').textContent = 0;
+        renderQuestion();
+    });
+});
+
+// ─── Start ───
+renderQuestion();
+</script>
+</body>
+</html>
