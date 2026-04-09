@@ -161,6 +161,64 @@
             .header h1 { font-size: 1.4em; }
             .d-pad button { width: 48px; height: 48px; font-size: 1.3em; }
         }
+
+        /* 侧边栏布局 */
+        .main-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1100px;
+            width: 100%;
+            margin: 10px auto;
+        }
+        .sidebar {
+            width: 220px;
+            flex-shrink: 0;
+        }
+        .sidebar-content {
+            background: rgba(255,255,255,0.85);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            font-size: 0.85em;
+            line-height: 1.6;
+        }
+        .sidebar h3 {
+            color: #4a4a8a;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e0e0f0;
+        }
+        .sidebar p { color: #555; margin-bottom: 10px; }
+        .sidebar ul {
+            margin: 0; padding-left: 18px;
+            color: #555;
+        }
+        .sidebar li { margin-bottom: 6px; }
+        .sidebar .highlight {
+            background: linear-gradient(135deg, #fef3e2, #fde8d0);
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 12px;
+        }
+        .sidebar .highlight-title {
+            font-weight: bold;
+            color: #e8853e;
+            margin-bottom: 4px;
+        }
+        .game-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 0;
+        }
+
+        @media (max-width: 900px) {
+            .main-container { flex-direction: column; }
+            .sidebar { width: 100%; }
+            .sidebar-content { padding: 14px; }
+        }
     </style>
 </head>
 <body>
@@ -169,6 +227,26 @@
         <p>帮助小兔子找到胡萝卜吧！</p>
     </div>
 
+    <div class="main-container">
+        <!-- 左侧边栏：迷宫历史 -->
+        <aside class="sidebar left-sidebar">
+            <div class="sidebar-content">
+                <h3>📜 迷宫的历史</h3>
+                <p>迷宫是一种古老的益智游戏，有着数千年的历史。</p>
+                <ul>
+                    <li><strong>古埃及</strong>：4500年前，法老墓室中就发现有迷宫图案</li>
+                    <li><strong>古希腊</strong>：传说中克里特岛的米诺斯迷宫关押着牛头怪</li>
+                    <li><strong>古罗马</strong>：贵族花园中流行用树篱搭建迷宫</li>
+                    <li><strong>现代</strong>：纸张迷宫书和电子迷宫游戏风靡全球</li>
+                </ul>
+                <div class="highlight">
+                    <div class="highlight-title">💡 你知道吗？</div>
+                    <p>世界上最大的植物迷宫位于法国，面积相当于7个足球场！</p>
+                </div>
+            </div>
+        </aside>
+
+        <div class="game-area">
     <div class="controls">
         <select id="levelSelect" aria-label="选择难度">
             <option value="easy">🌱 初级 (8×8)</option>
@@ -194,6 +272,27 @@
         <button class="left" onclick="move(-1,0)" aria-label="左">⬅️</button>
         <button class="right" onclick="move(1,0)" aria-label="右">➡️</button>
         <button class="down" onclick="move(0,1)" aria-label="下">⬇️</button>
+    </div>
+        </div>
+
+        <!-- 右侧边栏：对儿童的好处 -->
+        <aside class="sidebar right-sidebar">
+            <div class="sidebar-content">
+                <h3>🌟 玩迷宫的好处</h3>
+                <p>迷宫游戏对儿童的成长有很多积极影响：</p>
+                <ul>
+                    <li><strong>空间逻辑</strong>：理解上下左右方向感</li>
+                    <li><strong>专注力</strong>：仔细观察路径，不漏掉出口</li>
+                    <li><strong>问题解决</strong>：遇到死路时学会换个方向思考</li>
+                    <li><strong>规划能力</strong>：思考整条路径而不仅仅下一步</li>
+                    <li><strong>耐心坚持</strong>：不放弃直到找到出口</li>
+                </ul>
+                <div class="highlight">
+                    <div class="highlight-title">🎯 建议玩法</div>
+                    <p>初级→中级→高级循序渐进，每天玩10分钟效果最好！</p>
+                </div>
+            </div>
+        </aside>
     </div>
 
     <div class="win-overlay" id="winOverlay">
