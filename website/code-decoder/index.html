@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 儿童编码解密器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px 16px 40px;
+        }
+
+        header {
+            text-align: center;
+            padding: 24px 0 16px;
+        }
+        header h1 {
+            font-size: 2em;
+            background: linear-gradient(90deg, #00f5a0, #00d9f5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+        header p { color: #aaa; font-size: 0.95em; }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 12px;
+            color: #00d9f5;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+        .back-link:hover { text-decoration: underline; }
+
+        /* 密码类型选择 */
+        .cipher-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .cipher-tab {
+            padding: 10px 18px;
+            border: 2px solid #444;
+            border-radius: 24px;
+            background: transparent;
+            color: #ccc;
+            font-size: 0.95em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .cipher-tab:hover { border-color: #00d9f5; color: #fff; }
+        .cipher-tab.active {
+            border-color: #00f5a0;
+            background: rgba(0,245,160,0.15);
+            color: #00f5a0;
+            font-weight: 600;
+        }
+
+        /* 规则说明 */
+        .rule-box {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid #444;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin: 16px 0;
+            font-size: 0.9em;
+            line-height: 1.7;
+        }
+        .rule-box h3 {
+            color: #00f5a0;
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+        .rule-box code {
+            background: rgba(0,217,245,0.15);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #00d9f5;
+        }
+
+        /* 对照表 */
+        .ref-table {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+            gap: 4px;
+            margin: 12px 0;
+        }
+        .ref-cell {
+            text-align: center;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            padding: 6px 2px;
+            font-size: 0.8em;
+            line-height: 1.4;
+        }
+        .ref-cell .letter { color: #00f5a0; font-weight: 700; font-size: 1.1em; }
+        .ref-cell .mapped { color: #f5a623; }
+
+        /* 模式切换 */
+        .mode-switch {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+            margin: 20px 0 12px;
+        }
+        .mode-btn {
+            padding: 10px 28px;
+            border: 2px solid #00d9f5;
+            background: transparent;
+            color: #00d9f5;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .mode-btn:first-child { border-radius: 24px 0 0 24px; }
+        .mode-btn:last-child { border-radius: 0 24px 24px 0; }
+        .mode-btn.active {
+            background: #00d9f5;
+            color: #0f0c29;
+            font-weight: 700;
+        }
+
+        /* 输入输出区 */
+        .io-area { margin: 16px 0; }
+        .io-area label {
+            display: block;
+            font-size: 0.9em;
+            color: #aaa;
+            margin-bottom: 6px;
+        }
+        .io-area textarea {
+            width: 100%;
+            min-height: 80px;
+            background: rgba(255,255,255,0.07);
+            border: 2px solid #444;
+            border-radius: 10px;
+            padding: 14px;
+            color: #fff;
+            font-size: 1.1em;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        .io-area textarea:focus {
+            outline: none;
+            border-color: #00f5a0;
+        }
+        .io-area textarea[readonly] {
+            background: rgba(0,245,160,0.08);
+            border-color: #00f5a0;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 16px 0;
+        }
+        .btn {
+            padding: 12px 32px;
+            border: none;
+            border-radius: 24px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #00f5a0, #00d9f5);
+            color: #0f0c29;
+        }
+        .btn-primary:hover { transform: scale(1.05); box-shadow: 0 4px 20px rgba(0,245,160,0.3); }
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #ccc;
+            border: 1px solid #555;
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.18); }
+
+        /* 挑战模式 */
+        .challenge-section {
+            margin-top: 30px;
+            border-top: 1px solid #333;
+            padding-top: 24px;
+        }
+        .challenge-section h2 {
+            text-align: center;
+            color: #f5a623;
+            font-size: 1.3em;
+            margin-bottom: 16px;
+        }
+        .challenge-card {
+            background: rgba(245,166,35,0.08);
+            border: 2px solid rgba(245,166,35,0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 12px;
+        }
+        .challenge-card .cipher-type-tag {
+            display: inline-block;
+            background: rgba(245,166,35,0.2);
+            color: #f5a623;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            margin-bottom: 8px;
+        }
+        .challenge-card .encrypted-text {
+            font-family: 'Courier New', monospace;
+            font-size: 1.3em;
+            letter-spacing: 3px;
+            color: #ff6b6b;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        .challenge-card .hint {
+            font-size: 0.85em;
+            color: #888;
+            cursor: pointer;
+        }
+        .challenge-card .hint .hint-text { display: none; color: #f5a623; }
+        .challenge-card .hint.revealed .hint-text { display: inline; }
+
+        .answer-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .answer-row input {
+            flex: 1;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.07);
+            border: 2px solid #555;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1em;
+            font-family: 'Courier New', monospace;
+        }
+        .answer-row input:focus { outline: none; border-color: #f5a623; }
+        .answer-row .btn { padding: 10px 20px; font-size: 0.9em; }
+
+        .result-msg {
+            margin-top: 8px;
+            font-size: 0.95em;
+            min-height: 1.4em;
+        }
+        .result-msg.correct { color: #00f5a0; }
+        .result-msg.wrong { color: #ff6b6b; }
+
+        .score-bar {
+            text-align: center;
+            margin: 16px 0;
+            font-size: 1.1em;
+        }
+        .score-bar span { color: #f5a623; font-weight: 700; font-size: 1.3em; }
+
+        .difficulty-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        .diff-btn {
+            padding: 6px 16px;
+            border: 1px solid #555;
+            border-radius: 16px;
+            background: transparent;
+            color: #aaa;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .diff-btn.active {
+            border-color: #f5a623;
+            color: #f5a623;
+            background: rgba(245,166,35,0.12);
+        }
+
+        @media (max-width: 500px) {
+            header h1 { font-size: 1.5em; }
+            .cipher-tab { padding: 8px 12px; font-size: 0.85em; }
+            .ref-table { grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="../index.html" class="back-link">← 返回导航</a>
+    <header>
+        <h1>🔐 儿童编码解密器</h1>
+        <p>学习密码规则，训练推理解密能力</p>
+    </header>
+
+    <!-- 密码类型 -->
+    <div class="cipher-tabs">
+        <button class="cipher-tab active" data-cipher="number">🔢 数字密码</button>
+        <button class="cipher-tab" data-cipher="reverse">🔄 倒序密码</button>
+        <button class="cipher-tab" data-cipher="caesar">🏛️ 凯撒密码</button>
+        <button class="cipher-tab" data-cipher="morse">📡 摩尔斯电码</button>
+        <button class="cipher-tab" data-cipher="fence">🏗️ 栅栏密码</button>
+    </div>
+
+    <!-- 规则说明 -->
+    <div class="rule-box" id="ruleBox"></div>
+
+    <!-- 对照表 -->
+    <div id="refTableWrap" style="display:none;">
+        <div class="ref-table" id="refTable"></div>
+    </div>
+
+    <!-- 模式切换 -->
+    <div class="mode-switch">
+        <button class="mode-btn active" data-mode="encrypt">🔒 加密</button>
+        <button class="mode-btn" data-mode="decrypt">🔓 解密</button>
+    </div>
+
+    <!-- 输入 -->
+    <div class="io-area">
+        <label id="inputLabel">输入明文（英文字母）</label>
+        <textarea id="inputText" placeholder="在这里输入..." spellcheck="false"></textarea>
+    </div>
+
+    <div class="action-row">
+        <button class="btn btn-primary" id="convertBtn">⚡ 转换</button>
+        <button class="btn btn-secondary" id="clearBtn">🗑️ 清空</button>
+    </div>
+
+    <!-- 输出 -->
+    <div class="io-area">
+        <label id="outputLabel">加密结果</label>
+        <textarea id="outputText" readonly placeholder="结果会显示在这里..."></textarea>
+    </div>
+
+    <!-- 挑战模式 -->
+    <div class="challenge-section">
+        <h2>🏆 解密挑战</h2>
+        <div class="difficulty-row">
+            <button class="diff-btn active" data-diff="easy">⭐ 简单</button>
+            <button class="diff-btn" data-diff="medium">⭐⭐ 中等</button>
+            <button class="diff-btn" data-diff="hard">⭐⭐⭐ 困难</button>
+        </div>
+        <div class="score-bar">得分：<span id="score">0</span> 分 | 连对：<span id="streak">0</span></div>
+        <div id="challengeArea"></div>
+        <div class="action-row">
+            <button class="btn btn-primary" id="newChallengeBtn">🎲 新题目</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== 密码算法 =====
+const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+const MORSE_MAP = {
+    'A':'.-','B':'-...','C':'-.-.','D':'-..','E':'.','F':'..-.','G':'--.','H':'....',
+    'I':'..','J':'.---','K':'-.-','L':'.-..','M':'--','N':'-.','O':'---','P':'.--.',
+    'Q':'--.-','R':'.-.','S':'...','T':'-','U':'..-','V':'...-','W':'.--','X':'-..-',
+    'Y':'-.--','Z':'--..'
+};
+const MORSE_REV = Object.fromEntries(Object.entries(MORSE_MAP).map(([k,v])=>[v,k]));
+
+const ciphers = {
+    number: {
+        name: '数字密码',
+        rule: `<h3>📖 规则</h3>每个字母对应它在字母表中的序号：<code>A=1, B=2, C=3 ... Z=26</code><br>数字之间用空格分隔。例如：<code>HI → 8 9</code>`,
+        showRef: true,
+        refData: () => ALPHA.split('').map((c,i) => ({ letter: c, mapped: String(i+1) })),
+        encrypt: (text) => text.toUpperCase().split('').filter(c=>ALPHA.includes(c)).map(c=>ALPHA.indexOf(c)+1).join(' '),
+        decrypt: (text) => text.trim().split(/\s+/).map(n => { const i=parseInt(n)-1; return i>=0&&i<26?ALPHA[i]:'?'; }).join('')
+    },
+    reverse: {
+        name: '倒序密码',
+        rule: `<h3>📖 规则</h3>字母表倒过来对应：<code>A↔Z, B↔Y, C↔X ...</code><br>例如：<code>HI → SR</code>`,
+        showRef: true,
+        refData: () => ALPHA.split('').map((c,i) => ({ letter: c, mapped: ALPHA[25-i] })),
+        encrypt: (text) => text.toUpperCase().split('').map(c => ALPHA.includes(c)?ALPHA[25-ALPHA.indexOf(c)]:c).join(''),
+        decrypt: (text) => text.toUpperCase().split('').map(c => ALPHA.includes(c)?ALPHA[25-ALPHA.indexOf(c)]:c).join('')
+    },
+    caesar: {
+        name: '凯撒密码',
+        rule: `<h3>📖 规则</h3>每个字母向后移动 <code>3</code> 位：<code>A→D, B→E, ... X→A, Y→B, Z→C</code><br>例如：<code>HI → KL</code>`,
+        showRef: true,
+        refData: () => ALPHA.split('').map((c,i) => ({ letter: c, mapped: ALPHA[(i+3)%26] })),
+        encrypt: (text) => text.toUpperCase().split('').map(c => ALPHA.includes(c)?ALPHA[(ALPHA.indexOf(c)+3)%26]:c).join(''),
+        decrypt: (text) => text.toUpperCase().split('').map(c => ALPHA.includes(c)?ALPHA[(ALPHA.indexOf(c)-3+26)%26]:c).join('')
+    },
+    morse: {
+        name: '摩尔斯电码',
+        rule: `<h3>📖 规则</h3>用 <code>.</code>（短）和 <code>-</code>（长）表示字母，字母间用空格分隔，单词间用 <code>/</code> 分隔。<br>例如：<code>HI → .... ..</code>`,
+        showRef: true,
+        refData: () => ALPHA.split('').map(c => ({ letter: c, mapped: MORSE_MAP[c] })),
+        encrypt: (text) => text.toUpperCase().split('').filter(c=>ALPHA.includes(c)||c===' ').map(c=>c===' '?'/':MORSE_MAP[c]||'').join(' '),
+        decrypt: (text) => text.trim().split(/\s+/).map(s=>s==='/'?' ':MORSE_REV[s]||'?').join('')
+    },
+    fence: {
+        name: '栅栏密码',
+        rule: `<h3>📖 规则</h3>把文字分成两行交替排列，然后先读第一行再读第二行。<br>例如：<code>HELLO → 第一行 HLO，第二行 EL → HLOEL</code>`,
+        showRef: false,
+        encrypt: (text) => {
+            const t = text.toUpperCase().split('').filter(c=>ALPHA.includes(c));
+            const r1 = t.filter((_,i)=>i%2===0).join('');
+            const r2 = t.filter((_,i)=>i%2===1).join('');
+            return r1 + r2;
+        },
+        decrypt: (text) => {
+            const t = text.toUpperCase().split('').filter(c=>ALPHA.includes(c));
+            const half = Math.ceil(t.length/2);
+            const r1 = t.slice(0, half);
+            const r2 = t.slice(half);
+            let result = '';
+            for(let i=0; i<t.length; i++) {
+                result += i%2===0 ? (r1[i/2]||'') : (r2[(i-1)/2]||'');
+            }
+            return result;
+        }
+    }
+};
+
+// ===== 状态 =====
+let currentCipher = 'number';
+let currentMode = 'encrypt';
+let currentDiff = 'easy';
+let score = 0;
+let streak = 0;
+let challengeAnswer = '';
+
+// ===== DOM =====
+const $=s=>document.querySelector(s);
+const $$=s=>document.querySelectorAll(s);
+
+function updateUI() {
+    const c = ciphers[currentCipher];
+    // 规则
+    $('#ruleBox').innerHTML = c.rule;
+    // 对照表
+    if(c.showRef) {
+        $('#refTableWrap').style.display = 'block';
+        const data = c.refData();
+        $('#refTable').innerHTML = data.map(d =>
+            `<div class="ref-cell"><div class="letter">${d.letter}</div><div class="mapped">${d.mapped}</div></div>`
+        ).join('');
+    } else {
+        $('#refTableWrap').style.display = 'none';
+    }
+    // 标签
+    if(currentMode === 'encrypt') {
+        $('#inputLabel').textContent = '输入明文（英文字母）';
+        $('#outputLabel').textContent = '加密结果';
+    } else {
+        $('#inputLabel').textContent = '输入密文';
+        $('#outputLabel').textContent = '解密结果';
+    }
+    $('#inputText').value = '';
+    $('#outputText').value = '';
+}
+
+// 密码类型切换
+$$('.cipher-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        $$('.cipher-tab').forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active');
+        currentCipher = tab.dataset.cipher;
+        updateUI();
+    });
+});
+
+// 模式切换
+$$('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        $$('.mode-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMode = btn.dataset.mode;
+        updateUI();
+    });
+});
+
+// 转换
+$('#convertBtn').addEventListener('click', () => {
+    const c = ciphers[currentCipher];
+    const input = $('#inputText').value.trim();
+    if(!input) return;
+    const fn = currentMode === 'encrypt' ? c.encrypt : c.decrypt;
+    $('#outputText').value = fn(input);
+});
+
+// 清空
+$('#clearBtn').addEventListener('click', () => {
+    $('#inputText').value = '';
+    $('#outputText').value = '';
+});
+
+// ===== 挑战模式 =====
+const WORDS = {
+    easy: ['CAT','DOG','SUN','RED','BIG','RUN','HOP','FUN','CUP','HAT','PEN','BOX','MAP','BUS','FOX'],
+    medium: ['HELLO','WORLD','APPLE','HAPPY','TIGER','MUSIC','CANDY','SMILE','BRAVE','LIGHT','DREAM','MAGIC','OCEAN','STORM','CLOUD'],
+    hard: ['RAINBOW','DOLPHIN','MYSTERY','CAPTAIN','DIAMOND','FREEDOM','JOURNEY','KINGDOM','MONSTER','PENGUIN','THUNDER','VOLCANO','WARRIOR','CRYSTAL','PHOENIX']
+};
+
+function genChallenge() {
+    const words = WORDS[currentDiff];
+    const word = words[Math.floor(Math.random()*words.length)];
+    // 随机选密码类型
+    const types = Object.keys(ciphers);
+    const type = types[Math.floor(Math.random()*types.length)];
+    const c = ciphers[type];
+    const encrypted = c.encrypt(word);
+    challengeAnswer = word;
+
+    const hintText = currentDiff === 'easy'
+        ? `这个词有 ${word.length} 个字母，首字母是 ${word[0]}`
+        : currentDiff === 'medium'
+        ? `这个词有 ${word.length} 个字母`
+        : '没有提示哦，加油！';
+
+    $('#challengeArea').innerHTML = `
+        <div class="challenge-card">
+            <span class="cipher-type-tag">${c.name}</span>
+            <div class="encrypted-text">${encrypted}</div>
+            <div class="hint" onclick="this.classList.toggle('revealed')">
+                💡 点击查看提示 <span class="hint-text">→ ${hintText}</span>
+            </div>
+            <div class="answer-row">
+                <input type="text" id="answerInput" placeholder="输入你的答案（英文）" autocomplete="off" />
+                <button class="btn btn-primary" onclick="checkAnswer()">✅ 提交</button>
+            </div>
+            <div class="result-msg" id="resultMsg"></div>
+        </div>
+    `;
+    // 回车提交
+    setTimeout(()=>{
+        const inp = $('#answerInput');
+        if(inp) inp.addEventListener('keydown', e=>{ if(e.key==='Enter') checkAnswer(); });
+    }, 50);
+}
+
+function checkAnswer() {
+    const inp = $('#answerInput');
+    if(!inp) return;
+    const ans = inp.value.trim().toUpperCase();
+    const msg = $('#resultMsg');
+    if(!ans) return;
+    if(ans === challengeAnswer) {
+        streak++;
+        const bonus = currentDiff==='easy'?10:currentDiff==='medium'?20:30;
+        const streakBonus = streak >= 3 ? Math.floor(streak/3)*5 : 0;
+        score += bonus + streakBonus;
+        msg.className = 'result-msg correct';
+        msg.textContent = `🎉 正确！+${bonus}${streakBonus?'+'+streakBonus+'连对奖励':''}分`;
+    } else {
+        streak = 0;
+        msg.className = 'result-msg wrong';
+        msg.textContent = `❌ 不对哦，正确答案是 ${challengeAnswer}`;
+    }
+    $('#score').textContent = score;
+    $('#streak').textContent = streak;
+    inp.disabled = true;
+}
+
+// 难度切换
+$$('.diff-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        $$('.diff-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        currentDiff = btn.dataset.diff;
+        genChallenge();
+    });
+});
+
+$('#newChallengeBtn').addEventListener('click', genChallenge);
+
+// 初始化
+updateUI();
+genChallenge();
+</script>
+</body>
+</html>
