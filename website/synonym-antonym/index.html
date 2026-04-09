@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>近义词反义词配对</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 960px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 { text-align: center; color: #185a9d; margin-bottom: 10px; font-size: 2em; }
+
+        .subtitle {
+            text-align: center; color: #666; margin-bottom: 25px; font-size: 0.95em;
+        }
+
+        .stats {
+            display: flex; justify-content: space-around; margin-bottom: 25px;
+            padding: 18px; background: #f8f9fa; border-radius: 10px;
+        }
+        .stat-item { text-align: center; }
+        .stat-label { color: #666; font-size: 0.9em; margin-bottom: 4px; }
+        .stat-value { font-size: 1.8em; font-weight: bold; color: #185a9d; }
+
+        .progress-bar {
+            width: 100%; height: 8px; background: #e9ecef;
+            border-radius: 10px; margin-bottom: 20px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; background: linear-gradient(90deg, #43cea2, #185a9d);
+            transition: width 0.3s;
+        }
+
+        .mode-selector {
+            display: flex; justify-content: center; gap: 12px; margin-bottom: 25px;
+        }
+        .mode-btn {
+            padding: 10px 24px; border: 2px solid #185a9d; border-radius: 25px;
+            background: white; color: #185a9d; font-size: 1em; cursor: pointer;
+            transition: all 0.3s; font-weight: bold;
+        }
+        .mode-btn:hover { background: #e8f4fd; }
+        .mode-btn.active { background: #185a9d; color: white; }
+
+        .game-area {
+            display: flex; gap: 30px; justify-content: center; flex-wrap: wrap;
+            margin-bottom: 30px; min-height: 320px;
+        }
+
+        .column {
+            flex: 1; min-width: 200px; max-width: 350px;
+        }
+        .column-title {
+            text-align: center; font-size: 1.1em; font-weight: bold;
+            margin-bottom: 15px; padding: 10px; border-radius: 10px;
+        }
+        .col-left .column-title { background: #e8f5e9; color: #2e7d32; }
+        .col-right .column-title { background: #e3f2fd; color: #1565c0; }
+
+        .word-card {
+            padding: 14px 18px; margin-bottom: 10px; border-radius: 12px;
+            font-size: 1.1em; text-align: center; cursor: grab;
+            transition: all 0.3s; user-select: none; position: relative;
+            border: 2px solid transparent;
+        }
+        .word-card:active { cursor: grabbing; }
+
+        .col-left .word-card {
+            background: #f1f8e9; border-color: #a5d6a7; color: #2e7d32;
+        }
+        .col-right .word-card {
+            background: #e3f2fd; border-color: #90caf9; color: #1565c0;
+        }
+
+        .word-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .word-card.selected {
+            border-color: #ff9800; background: #fff3e0; color: #e65100;
+            box-shadow: 0 0 0 3px rgba(255,152,0,0.3);
+        }
+
+        .word-card.matched {
+            border-color: #4caf50; background: #c8e6c9; color: #1b5e20;
+            cursor: default; opacity: 0.7;
+        }
+        .word-card.matched::after {
+            content: '✓'; position: absolute; right: 12px; top: 50%;
+            transform: translateY(-50%); font-size: 1.2em;
+        }
+
+        .word-card.wrong {
+            animation: shake 0.5s;
+            border-color: #f44336; background: #ffebee;
+        }
+
+        .word-card.dragging {
+            opacity: 0.5; transform: scale(0.95);
+        }
+
+        .word-card.drag-over {
+            border-color: #ff9800; border-style: dashed;
+            background: #fff8e1;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-5px); }
+            80% { transform: translateX(5px); }
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .buttons {
+            display: flex; gap: 15px; justify-content: center;
+        }
+        button {
+            padding: 12px 30px; font-size: 1em; border: none;
+            border-radius: 10px; cursor: pointer; transition: all 0.3s; font-weight: bold;
+        }
+        .btn-primary { background: #185a9d; color: white; }
+        .btn-primary:hover {
+            background: #0d47a1; transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(24,90,157,0.3);
+        }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-secondary:hover { background: #5a6268; }
+
+        .result-panel {
+            text-align: center; padding: 30px; display: none;
+        }
+        .result-panel h2 { color: #185a9d; margin-bottom: 20px; }
+        .result-panel .score { font-size: 3em; color: #43cea2; font-weight: bold; }
+        .result-panel .message { font-size: 1.2em; color: #666; margin: 15px 0; }
+
+        .hint-text {
+            text-align: center; color: #999; font-size: 0.85em; margin-bottom: 15px;
+        }
+
+        @media (max-width: 600px) {
+            .container { padding: 20px; }
+            h1 { font-size: 1.5em; }
+            .game-area { flex-direction: column; gap: 20px; }
+            .column { max-width: 100%; }
+            .stats { flex-direction: column; gap: 10px; }
+            .mode-selector { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 近义词反义词配对</h1>
+        <p class="subtitle">拖拽或点击匹配近义/反义词语，训练语义逻辑与归纳能力</p>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" data-mode="synonym" onclick="switchMode('synonym')">近义词</button>
+            <button class="mode-btn" data-mode="antonym" onclick="switchMode('antonym')">反义词</button>
+            <button class="mode-btn" data-mode="mixed" onclick="switchMode('mixed')">混合模式</button>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-label">当前关卡</div>
+                <div class="stat-value" id="currentRound">1</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">已配对</div>
+                <div class="stat-value" id="matchedCount">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">错误次数</div>
+                <div class="stat-value" id="wrongCount">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">准确率</div>
+                <div class="stat-value" id="accuracy">100%</div>
+            </div>
+        </div>
+
+        <p class="hint-text">💡 点击左侧词语，再点击右侧词语进行配对；也可以拖拽配对</p>
+
+        <div class="game-area" id="gameArea">
+            <div class="column col-left">
+                <div class="column-title" id="leftTitle">词语</div>
+                <div id="leftColumn"></div>
+            </div>
+            <div class="column col-right">
+                <div class="column-title" id="rightTitle">配对</div>
+                <div id="rightColumn"></div>
+            </div>
+        </div>
+
+        <div class="result-panel" id="resultPanel">
+            <h2>🎉 关卡完成！</h2>
+            <div class="score" id="resultScore"></div>
+            <div class="message" id="resultMessage"></div>
+        </div>
+
+        <div class="buttons">
+            <button class="btn-primary" id="nextBtn" onclick="nextRound()" style="display:none;">下一关</button>
+            <button class="btn-secondary" onclick="restart()">重新开始</button>
+        </div>
+    </div>
+
+    <footer style="text-align:center;color:rgba(255,255,255,0.6);font-size:0.8em;margin-top:20px;">
+        由 Claude Opus 4.6 生成 · 2026-04-10
+    </footer>
+
+    <script>
+        // ===== 词库 =====
+        const synonymPairs = [
+            ["美丽","漂亮"],["高兴","快乐"],["聪明","机灵"],["勇敢","英勇"],
+            ["安静","宁静"],["帮助","援助"],["著名","闻名"],["立刻","马上"],
+            ["温暖","暖和"],["坚固","牢固"],["仔细","认真"],["忽然","突然"],
+            ["渐渐","逐渐"],["特别","格外"],["喜欢","喜爱"],["愤怒","生气"],
+            ["害怕","恐惧"],["悲伤","难过"],["明白","理解"],["简单","容易"],
+            ["困难","艰难"],["迅速","快速"],["巨大","庞大"],["珍贵","宝贵"],
+            ["骄傲","自豪"],["疲劳","疲惫"],["寻找","寻觅"],["保护","守护"],
+            ["观察","观看"],["思考","思索"],["优秀","出色"],["丰富","充裕"],
+            ["灵活","敏捷"],["严肃","庄重"],["模仿","模拟"],["感激","感谢"],
+            ["茂盛","繁茂"],["辽阔","广阔"],["清澈","清亮"],["朦胧","模糊"]
+        ];
+
+        const antonymPairs = [
+            ["黑暗","光明"],["寒冷","炎热"],["高大","矮小"],["勤劳","懒惰"],
+            ["勇敢","胆怯"],["善良","邪恶"],["聪明","愚笨"],["美丽","丑陋"],
+            ["快乐","悲伤"],["成功","失败"],["安全","危险"],["简单","复杂"],
+            ["前进","后退"],["开始","结束"],["白天","黑夜"],["上升","下降"],
+            ["喧闹","安静"],["粗糙","光滑"],["浪费","节约"],["骄傲","谦虚"],
+            ["团结","分裂"],["诚实","虚伪"],["坚强","软弱"],["慷慨","吝啬"],
+            ["崭新","陈旧"],["迅速","缓慢"],["宽阔","狭窄"],["浓密","稀疏"],
+            ["清晰","模糊"],["干燥","潮湿"],["甜蜜","苦涩"],["温柔","粗暴"],
+            ["丰收","歉收"],["繁荣","衰败"],["赞扬","批评"],["接受","拒绝"],
+            ["出现","消失"],["增加","减少"],["进攻","防守"],["真实","虚假"]
+        ];
+
+        // ===== 状态 =====
+        let currentMode = 'synonym';
+        let currentRound = 0;
+        let matchedCount = 0;
+        let wrongCount = 0;
+        let totalAttempts = 0;
+        let selectedLeft = null;
+        let selectedRight = null;
+        let roundPairs = [];
+        let pairsPerRound = 5;
+        let allRoundSets = [];
+        let dragSource = null;
+
+        // ===== 初始化 =====
+        function shuffle(arr) {
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        function getPool() {
+            if (currentMode === 'synonym') return synonymPairs;
+            if (currentMode === 'antonym') return antonymPairs;
+            return [...synonymPairs, ...antonymPairs];
+        }
+
+        function prepareRounds() {
+            const pool = shuffle(getPool());
+            allRoundSets = [];
+            for (let i = 0; i < pool.length; i += pairsPerRound) {
+                const chunk = pool.slice(i, i + pairsPerRound);
+                if (chunk.length >= 3) allRoundSets.push(chunk);
+            }
+            if (allRoundSets.length === 0) allRoundSets.push(pool.slice(0, pairsPerRound));
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+            restart();
+        }
+
+        function restart() {
+            currentRound = 0;
+            matchedCount = 0;
+            wrongCount = 0;
+            totalAttempts = 0;
+            prepareRounds();
+            document.getElementById('resultPanel').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'flex';
+            document.getElementById('nextBtn').style.display = 'none';
+            loadRound();
+        }
+
+        function loadRound() {
+            if (currentRound >= allRoundSets.length) {
+                currentRound = 0;
+                prepareRounds();
+            }
+
+            roundPairs = allRoundSets[currentRound];
+            selectedLeft = null;
+            selectedRight = null;
+            let roundMatched = 0;
+
+            const leftWords = shuffle(roundPairs.map(p => p[0]));
+            const rightWords = shuffle(roundPairs.map(p => p[1]));
+
+            const leftCol = document.getElementById('leftColumn');
+            const rightCol = document.getElementById('rightColumn');
+            leftCol.innerHTML = '';
+            rightCol.innerHTML = '';
+
+            const modeLabel = currentMode === 'synonym' ? '近义词' :
+                              currentMode === 'antonym' ? '反义词' : '近义/反义词';
+            document.getElementById('leftTitle').textContent = '词语';
+            document.getElementById('rightTitle').textContent = modeLabel;
+
+            leftWords.forEach(w => {
+                const card = createCard(w, 'left');
+                leftCol.appendChild(card);
+            });
+
+            rightWords.forEach(w => {
+                const card = createCard(w, 'right');
+                rightCol.appendChild(card);
+            });
+
+            updateStats();
+        }
+
+        function createCard(word, side) {
+            const card = document.createElement('div');
+            card.className = 'word-card';
+            card.textContent = word;
+            card.dataset.word = word;
+            card.dataset.side = side;
+            card.draggable = true;
+
+            card.addEventListener('click', () => handleClick(card, side));
+            card.addEventListener('dragstart', handleDragStart);
+            card.addEventListener('dragend', handleDragEnd);
+            card.addEventListener('dragover', handleDragOver);
+            card.addEventListener('dragleave', handleDragLeave);
+            card.addEventListener('drop', handleDrop);
+
+            // Touch support
+            card.addEventListener('touchstart', handleTouchStart, { passive: true });
+
+            return card;
+        }
+
+        // ===== 点击配对 =====
+        function handleClick(card, side) {
+            if (card.classList.contains('matched')) return;
+
+            if (side === 'left') {
+                if (selectedLeft) selectedLeft.classList.remove('selected');
+                selectedLeft = card;
+                card.classList.add('selected');
+                if (selectedRight) tryMatch();
+            } else {
+                if (selectedRight) selectedRight.classList.remove('selected');
+                selectedRight = card;
+                card.classList.add('selected');
+                if (selectedLeft) tryMatch();
+            }
+        }
+
+        // ===== 拖拽配对 =====
+        function handleDragStart(e) {
+            if (this.classList.contains('matched')) { e.preventDefault(); return; }
+            dragSource = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.dataset.word);
+        }
+
+        function handleDragEnd() {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.drag-over').forEach(c => c.classList.remove('drag-over'));
+            dragSource = null;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            if (!dragSource || this.classList.contains('matched')) return;
+            if (dragSource.dataset.side === this.dataset.side) return;
+            this.classList.add('drag-over');
+        }
+
+        function handleDragLeave() {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            if (!dragSource || this.classList.contains('matched')) return;
+            if (dragSource.dataset.side === this.dataset.side) return;
+
+            if (dragSource.dataset.side === 'left') {
+                selectedLeft = dragSource;
+                selectedRight = this;
+            } else {
+                selectedLeft = this;
+                selectedRight = dragSource;
+            }
+            tryMatch();
+        }
+
+        function handleTouchStart(e) {
+            // Touch just uses click handler via tap
+        }
+
+        // ===== 匹配逻辑 =====
+        function tryMatch() {
+            if (!selectedLeft || !selectedRight) return;
+
+            const leftWord = selectedLeft.dataset.word;
+            const rightWord = selectedRight.dataset.word;
+            totalAttempts++;
+
+            const isMatch = roundPairs.some(p => p[0] === leftWord && p[1] === rightWord);
+
+            if (isMatch) {
+                selectedLeft.classList.remove('selected');
+                selectedRight.classList.remove('selected');
+                selectedLeft.classList.add('matched');
+                selectedRight.classList.add('matched');
+                selectedLeft.style.animation = 'pop 0.4s';
+                selectedRight.style.animation = 'pop 0.4s';
+                matchedCount++;
+
+                const allCards = document.querySelectorAll('.word-card');
+                const allMatched = [...allCards].every(c => c.classList.contains('matched'));
+                if (allMatched) {
+                    setTimeout(() => roundComplete(), 500);
+                }
+            } else {
+                wrongCount++;
+                selectedLeft.classList.add('wrong');
+                selectedRight.classList.add('wrong');
+                const l = selectedLeft, r = selectedRight;
+                setTimeout(() => {
+                    l.classList.remove('wrong', 'selected');
+                    r.classList.remove('wrong', 'selected');
+                }, 600);
+            }
+
+            selectedLeft = null;
+            selectedRight = null;
+            updateStats();
+        }
+
+        function roundComplete() {
+            document.getElementById('nextBtn').style.display = 'inline-block';
+
+            if (currentRound + 1 >= allRoundSets.length) {
+                showFinalResult();
+            }
+        }
+
+        function nextRound() {
+            currentRound++;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('resultPanel').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'flex';
+            loadRound();
+        }
+
+        function showFinalResult() {
+            const acc = totalAttempts > 0 ? Math.round((matchedCount / totalAttempts) * 100) : 100;
+            let msg = '';
+            if (acc >= 95) msg = '🎉 太厉害了！词语大师！';
+            else if (acc >= 80) msg = '👍 很棒！语义感觉很好！';
+            else if (acc >= 60) msg = '💪 不错！多练习会更好！';
+            else msg = '🌟 加油！多读多记，词汇量会越来越大！';
+
+            document.getElementById('gameArea').style.display = 'none';
+            document.getElementById('resultPanel').style.display = 'block';
+            document.getElementById('resultScore').textContent = acc + '%';
+            document.getElementById('resultMessage').textContent = msg;
+            document.getElementById('nextBtn').style.display = 'none';
+        }
+
+        function updateStats() {
+            document.getElementById('currentRound').textContent = currentRound + 1;
+            document.getElementById('matchedCount').textContent = matchedCount;
+            document.getElementById('wrongCount').textContent = wrongCount;
+            const acc = totalAttempts > 0 ? Math.round((matchedCount / totalAttempts) * 100) : 100;
+            document.getElementById('accuracy').textContent = acc + '%';
+
+            const totalPairs = allRoundSets.reduce((s, r) => s + r.length, 0);
+            const progress = totalPairs > 0 ? (matchedCount / totalPairs) * 100 : 0;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        // ===== 启动 =====
+        restart();
+    </script>
+</body>
+</html>
