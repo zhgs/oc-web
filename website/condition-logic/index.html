@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚖️ 条件判断逻辑训练 - 小学训练</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        h1 { text-align: center; color: #f5576c; margin-bottom: 10px; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-size: 1.1em; }
+        
+        .rules-section { background: #fff3e0; border-left: 4px solid #ff9800; padding: 20px; border-radius: 10px; margin-bottom: 30px; }
+        .rules-title { font-size: 1.3em; font-weight: bold; color: #e65100; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .rule-item { padding: 10px 15px; margin: 10px 0; background: white; border-radius: 8px; border-left: 3px solid #ff9800; font-size: 1.05em; line-height: 1.6; }
+        .rule-number { display: inline-block; background: #ff9800; color: white; width: 25px; height: 25px; border-radius: 50%; text-align: center; line-height: 25px; margin-right: 8px; font-weight: bold; font-size: 0.9em; }
+        
+        .progress-bar { background: #e0e0e0; height: 10px; border-radius: 10px; margin-bottom: 20px; overflow: hidden; }
+        .progress-fill { background: linear-gradient(90deg, #f093fb, #f5576c); height: 100%; transition: width 0.3s; }
+        
+        .stats { display: flex; justify-content: space-around; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 1.8em; font-weight: bold; color: #f5576c; }
+        .stat-label { color: #666; font-size: 0.9em; margin-top: 5px; }
+        
+        .question-card { background: #fff; border: 3px solid #f093fb; border-radius: 15px; padding: 25px; margin-bottom: 20px; }
+        .question-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .question-number { background: #f5576c; color: white; padding: 8px 16px; border-radius: 20px; font-weight: bold; }
+        .question-type { background: #e3f2fd; color: #1976d2; padding: 6px 12px; border-radius: 15px; font-size: 0.9em; }
+        .question-text { font-size: 1.2em; color: #333; margin: 20px 0; line-height: 1.8; padding: 15px; background: #fafafa; border-radius: 10px; }
+        
+        .answer-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
+        .answer-btn { flex: 1; max-width: 200px; padding: 15px 30px; border: 3px solid #e0e0e0; border-radius: 15px; cursor: pointer; font-size: 1.1em; font-weight: bold; transition: all 0.3s; background: white; }
+        .answer-btn:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .answer-btn.correct { background: #4caf50; color: white; border-color: #4caf50; }
+        .answer-btn.wrong { background: #f44336; color: white; border-color: #f44336; }
+        .answer-btn.selected { border-color: #f5576c; background: #ffe0e6; }
+        .answer-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+        
+        .feedback { margin-top: 20px; padding: 20px; border-radius: 10px; display: none; animation: slideIn 0.3s; }
+        .feedback.show { display: block; }
+        .feedback.correct { background: #d4edda; border-left: 4px solid #28a745; }
+        .feedback.wrong { background: #f8d7da; border-left: 4px solid #dc3545; }
+        .feedback-title { font-weight: bold; font-size: 1.1em; margin-bottom: 10px; }
+        .feedback.correct .feedback-title { color: #155724; }
+        .feedback.wrong .feedback-title { color: #721c24; }
+        .feedback-text { line-height: 1.6; color: #333; }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .controls { text-align: center; margin-top: 30px; }
+        .btn { padding: 12px 30px; border: none; border-radius: 10px; cursor: pointer; font-size: 1em; transition: all 0.3s; margin: 5px; font-weight: bold; }
+        .btn-primary { background: #f5576c; color: white; }
+        .btn-primary:hover { background: #e04556; transform: translateY(-2px); }
+        .btn-secondary { background: #9c27b0; color: white; }
+        .btn-secondary:hover { background: #7b1fa2; transform: translateY(-2px); }
+        
+        .result-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
+        .result-modal.show { display: flex; }
+        .result-content { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 450px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .result-icon { font-size: 4em; margin-bottom: 20px; }
+        .result-score { font-size: 2.5em; font-weight: bold; color: #f5576c; margin: 20px 0; }
+        .result-message { font-size: 1.2em; color: #666; margin: 15px 0; }
+        .result-stats { display: flex; justify-content: space-around; margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 10px; }
+        
+        .back-link { display: block; text-align: center; margin-top: 20px; color: #f5576c; text-decoration: none; font-weight: bold; }
+        .back-link:hover { text-decoration: underline; }
+        
+        .hint-box { background: #e3f2fd; border-left: 4px solid #2196f3; padding: 15px; border-radius: 8px; margin: 15px 0; }
+        .hint-title { font-weight: bold; color: #1565c0; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚖️ 条件判断逻辑训练</h1>
+        <p class="subtitle">根据规则判断对错，训练规则理解与逻辑推理能力</p>
+        
+        <div class="rules-section" id="rulesSection">
+            <div class="rules-title">📋 当前规则</div>
+            <div id="rulesContent"></div>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar"></div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="currentNum">1</div>
+                <div class="stat-label">当前题目</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="correctCount">0</div>
+                <div class="stat-label">答对题数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="accuracy">0%</div>
+                <div class="stat-label">正确率</div>
+            </div>
+        </div>
+        
+        <div id="questionContainer"></div>
+        
+        <div class="controls">
+            <button class="btn btn-secondary" onclick="prevQuestion()">⬅️ 上一题</button>
+            <button class="btn btn-primary" onclick="nextQuestion()">下一题 ➡️</button>
+            <button class="btn btn-primary" onclick="submitTest()" style="background: #4caf50;">✅ 完成测试</button>
+        </div>
+        
+        <a href="../index.html" class="back-link">← 返回首页</a>
+    </div>
+    
+    <div class="result-modal" id="resultModal">
+        <div class="result-content">
+            <div class="result-icon">🎉</div>
+            <h2>测试完成！</h2>
+            <div class="result-score" id="finalScore">0 / 10</div>
+            <div class="result-message" id="resultMessage"></div>
+            <div class="result-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="finalCorrect">0</div>
+                    <div class="stat-label">答对</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="finalWrong">0</div>
+                    <div class="stat-label">答错</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="finalAccuracy">0%</div>
+                    <div class="stat-label">正确率</div>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="restartTest()">🔄 重新开始</button>
+            <button class="btn btn-secondary" onclick="closeModal()">📖 查看答案</button>
+        </div>
+    </div>
+
+    <script>
+    const questionSets = [
+        {
+            title: "动物园规则",
+            rules: [
+                "如果是猫科动物，那么它会爬树",
+                "如果会飞，那么它是鸟类",
+                "如果是鱼类，那么它生活在水里"
+            ],
+            questions: [
+                {
+                    text: "老虎是猫科动物，所以老虎会爬树。",
+                    answer: true,
+                    explanation: "根据规则1：如果是猫科动物，那么它会爬树。老虎是猫科动物，符合条件，所以老虎会爬树。这是正确的逻辑推理。"
+                },
+                {
+                    text: "企鹅会游泳，所以企鹅是鱼类。",
+                    answer: false,
+                    explanation: "规则3说：如果是鱼类，那么它生活在水里。但这不代表生活在水里的都是鱼类。企鹅虽然会游泳，但它是鸟类，不是鱼类。"
+                },
+                {
+                    text: "鹦鹉会飞，所以鹦鹉是鸟类。",
+                    answer: true,
+                    explanation: "根据规则2：如果会飞，那么它是鸟类。鹦鹉会飞，符合条件，所以鹦鹉是鸟类。"
+                }
+            ]
+        },
+        {
+            title: "学校活动规则",
+            rules: [
+                "如果下雨，那么运动会取消",
+                "如果是周末，那么可以去图书馆",
+                "如果考试成绩90分以上，那么可以获得奖状"
+            ],
+            questions: [
+                {
+                    text: "今天下雨了，所以运动会取消了。",
+                    answer: true,
+                    explanation: "根据规则1：如果下雨，那么运动会取消。今天下雨了，满足条件，所以运动会取消。"
+                },
+                {
+                    text: "小明今天去图书馆了，所以今天是周末。",
+                    answer: false,
+                    explanation: "规则2说：如果是周末，那么可以去图书馆。但这不代表只有周末才能去图书馆。平时也可能去图书馆，所以不能反推今天一定是周末。"
+                },
+                {
+                    text: "小红考了95分，所以小红可以获得奖状。",
+                    answer: true,
+                    explanation: "根据规则3：如果考试成绩90分以上，那么可以获得奖状。小红95分超过90分，满足条件，所以可以获得奖状。"
+                },
+                {
+                    text: "运动会没有取消，所以今天没有下雨。",
+                    answer: false,
+                    explanation: "规则1说：如果下雨，那么运动会取消。但运动会不取消，可能是因为没下雨，也可能是其他原因（比如改期了）。不能直接反推。"
+                }
+            ]
+        },
+        {
+            title: "交通规则",
+            rules: [
+                "如果红灯亮了，那么必须停车",
+                "如果是单行道，那么不能逆行",
+                "如果看到斑马线，那么要让行人先过"
+            ],
+            questions: [
+                {
+                    text: "红灯亮了，小明停车了，小明做对了。",
+                    answer: true,
+                    explanation: "根据规则1：如果红灯亮了，那么必须停车。红灯亮了，小明停车，遵守了规则。"
+                },
+                {
+                    text: "这条路是单行道，小华逆行了，小华违反了规则。",
+                    answer: true,
+                    explanation: "根据规则2：如果是单行道，那么不能逆行。这条路是单行道，小华逆行，违反了规则。"
+                },
+                {
+                    text: "小李让行人先过了，所以前面一定有斑马线。",
+                    answer: false,
+                    explanation: "规则3说：如果看到斑马线，那么要让行人先过。但让行人先过不一定只在斑马线，也可能是出于礼貌或其他原因。不能反推一定有斑马线。"
+                }
+            ]
+        }
+    ];
+
+    let currentSet = 0;
+    let currentQuestion = 0;
+    let userAnswers = [];
+    let correctCount = 0;
+
+    function initTest() {
+        currentSet = 0;
+        currentQuestion = 0;
+        userAnswers = [];
+        correctCount = 0;
+        loadQuestionSet();
+    }
+
+    function loadQuestionSet() {
+        const set = questionSets[currentSet];
+        const rulesContent = document.getElementById('rulesContent');
+        
+        rulesContent.innerHTML = set.rules.map((rule, i) => `
+            <div class="rule-item">
+                <span class="rule-number">${i + 1}</span>${rule}
+            </div>
+        `).join('');
+        
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        const set = questionSets[currentSet];
+        const q = set.questions[currentQuestion];
+        const globalIndex = getGlobalIndex();
+        const totalQuestions = getTotalQuestions();
+        
+        const container = document.getElementById('questionContainer');
+        const answered = userAnswers[globalIndex] !== undefined;
+        
+        container.innerHTML = `
+            <div class="question-card">
+                <div class="question-header">
+                    <span class="question-number">第 ${globalIndex + 1} 题</span>
+                    <span class="question-type">${set.title}</span>
+                </div>
+                <div class="question-text">${q.text}</div>
+                <div class="hint-box">
+                    <div class="hint-title">💡 提示</div>
+                    仔细阅读上面的规则，判断这个陈述是否符合规则的逻辑。
+                </div>
+                <div class="answer-buttons">
+                    <button class="answer-btn ${userAnswers[globalIndex] === true ? 'selected' : ''} ${answered && q.answer === true ? 'correct' : ''} ${answered && userAnswers[globalIndex] === true && q.answer === false ? 'wrong' : ''}" 
+                            onclick="selectAnswer(true)" ${answered ? 'disabled' : ''}>
+                        ✅ 正确
+                    </button>
+                    <button class="answer-btn ${userAnswers[globalIndex] === false ? 'selected' : ''} ${answered && q.answer === false ? 'correct' : ''} ${answered && userAnswers[globalIndex] === false && q.answer === true ? 'wrong' : ''}" 
+                            onclick="selectAnswer(false)" ${answered ? 'disabled' : ''}>
+                        ❌ 错误
+                    </button>
+                </div>
+                <div class="feedback ${answered ? 'show' : ''} ${answered && userAnswers[globalIndex] === q.answer ? 'correct' : 'wrong'}">
+                    <div class="feedback-title">
+                        ${answered && userAnswers[globalIndex] === q.answer ? '🎉 回答正确！' : '💭 回答错误'}
+                    </div>
+                    <div class="feedback-text">${q.explanation}</div>
+                </div>
+            </div>
+        `;
+        
+        updateStats();
+    }
+
+    function getGlobalIndex() {
+        let index = 0;
+        for (let i = 0; i < currentSet; i++) {
+            index += questionSets[i].questions.length;
+        }
+        return index + currentQuestion;
+    }
+
+    function getTotalQuestions() {
+        return questionSets.reduce((sum, set) => sum + set.questions.length, 0);
+    }
+
+    function selectAnswer(answer) {
+        const globalIndex = getGlobalIndex();
+        const set = questionSets[currentSet];
+        const q = set.questions[currentQuestion];
+        
+        userAnswers[globalIndex] = answer;
+        if (answer === q.answer) {
+            correctCount++;
+        }
+        
+        renderQuestion();
+    }
+
+    function updateStats() {
+        const globalIndex = getGlobalIndex();
+        const totalQuestions = getTotalQuestions();
+        const answeredCount = userAnswers.filter(a => a !== undefined).length;
+        const accuracy = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
+        
+        document.getElementById('currentNum').textContent = globalIndex + 1;
+        document.getElementById('correctCount').textContent = correctCount;
+        document.getElementById('accuracy').textContent = accuracy + '%';
+        
+        const progress = ((globalIndex + 1) / totalQuestions) * 100;
+        document.getElementById('progressBar').style.width = progress + '%';
+    }
+
+    function prevQuestion() {
+        if (currentQuestion > 0) {
+            currentQuestion--;
+        } else if (currentSet > 0) {
+            currentSet--;
+            currentQuestion = questionSets[currentSet].questions.length - 1;
+            loadQuestionSet();
+            return;
+        }
+        renderQuestion();
+    }
+
+    function nextQuestion() {
+        const set = questionSets[currentSet];
+        if (currentQuestion < set.questions.length - 1) {
+            currentQuestion++;
+        } else if (currentSet < questionSets.length - 1) {
+            currentSet++;
+            currentQuestion = 0;
+            loadQuestionSet();
+            return;
+        }
+        renderQuestion();
+    }
+
+    function submitTest() {
+        const totalQuestions = getTotalQuestions();
+        const answeredCount = userAnswers.filter(a => a !== undefined).length;
+        
+        if (answeredCount < totalQuestions) {
+            if (!confirm(`你还有 ${totalQuestions - answeredCount} 题没有回答，确定要提交吗？`)) {
+                return;
+            }
+        }
+        
+        const accuracy = Math.round((correctCount / totalQuestions) * 100);
+        const wrongCount = answeredCount - correctCount;
+        
+        document.getElementById('finalScore').textContent = `${correctCount} / ${totalQuestions}`;
+        document.getElementById('finalCorrect').textContent = correctCount;
+        document.getElementById('finalWrong').textContent = wrongCount;
+        document.getElementById('finalAccuracy').textContent = accuracy + '%';
+        
+        let message = '';
+        if (accuracy >= 90) {
+            message = '太棒了！你的逻辑推理能力非常强！🌟';
+        } else if (accuracy >= 70) {
+            message = '很不错！继续保持，你会更棒！💪';
+        } else if (accuracy >= 50) {
+            message = '还不错！多练习会更好！📚';
+        } else {
+            message = '加油！多思考规则的含义！💡';
+        }
+        document.getElementById('resultMessage').textContent = message;
+        
+        document.getElementById('resultModal').classList.add('show');
+    }
+
+    function restartTest() {
+        document.getElementById('resultModal').classList.remove('show');
+        initTest();
+    }
+
+    function closeModal() {
+        document.getElementById('resultModal').classList.remove('show');
+    }
+
+    initTest();
+    </script>
+</body>
+</html>
