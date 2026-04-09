@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔢 数字规律推理器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 700px; margin: 0 auto;
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px; padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        header { text-align: center; margin-bottom: 24px; }
+        header h1 { font-size: 28px; color: #5b21b6; }
+        header p { color: #888; font-size: 14px; margin-top: 4px; }
+        .back-link {
+            display: inline-block; margin-bottom: 16px;
+            color: #7c3aed; text-decoration: none; font-size: 14px;
+        }
+        .back-link:hover { text-decoration: underline; }
+
+        /* 控制栏 */
+        .controls {
+            display: flex; gap: 12px; justify-content: center;
+            flex-wrap: wrap; margin-bottom: 20px;
+        }
+        .controls select, .controls button {
+            padding: 10px 20px; border-radius: 10px; font-size: 15px;
+            border: 2px solid #e0e0e0; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .controls select:focus { border-color: #7c3aed; outline: none; }
+        .btn-primary {
+            background: #7c3aed; color: #fff; border-color: #7c3aed !important;
+            font-weight: 600;
+        }
+        .btn-primary:hover { background: #6d28d9; }
+        .btn-hint {
+            background: #f59e0b; color: #fff; border-color: #f59e0b !important;
+        }
+        .btn-hint:hover { background: #d97706; }
+
+        /* 统计 */
+        .stats {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 20px; font-size: 15px; color: #666;
+        }
+        .stats span { font-weight: 600; color: #5b21b6; }
+
+        /* 题目区 */
+        .question-area {
+            background: #f8f5ff; border-radius: 16px;
+            padding: 24px; margin-bottom: 20px;
+            border: 2px solid #ede9fe;
+        }
+        .question-label {
+            font-size: 14px; color: #7c3aed; font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .rule-hint {
+            font-size: 13px; color: #a78bfa; margin-bottom: 14px;
+            font-style: italic;
+        }
+        .sequence {
+            display: flex; align-items: center; justify-content: center;
+            flex-wrap: wrap; gap: 8px;
+        }
+        .seq-num {
+            width: 56px; height: 56px; display: flex;
+            align-items: center; justify-content: center;
+            background: #fff; border-radius: 12px;
+            font-size: 22px; font-weight: 700; color: #5b21b6;
+            border: 2px solid #ddd6fe;
+            box-shadow: 0 2px 8px rgba(124,58,237,0.08);
+        }
+        .seq-arrow { font-size: 18px; color: #c4b5fd; }
+        .seq-input {
+            width: 56px; height: 56px; text-align: center;
+            font-size: 22px; font-weight: 700; color: #7c3aed;
+            border: 3px dashed #a78bfa; border-radius: 12px;
+            background: #faf5ff; outline: none;
+            transition: border-color 0.2s;
+        }
+        .seq-input:focus { border-color: #7c3aed; background: #fff; }
+        .seq-input.correct {
+            border-color: #10b981; background: #ecfdf5; color: #059669;
+            border-style: solid;
+        }
+        .seq-input.wrong {
+            border-color: #ef4444; background: #fef2f2; color: #dc2626;
+            border-style: solid; animation: shake 0.4s;
+        }
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+
+        /* 提交按钮 */
+        .submit-row { text-align: center; margin-bottom: 16px; }
+        .btn-submit {
+            padding: 12px 48px; border-radius: 12px; font-size: 17px;
+            background: linear-gradient(135deg, #7c3aed, #a78bfa);
+            color: #fff; border: none; cursor: pointer;
+            font-weight: 700; box-shadow: 0 4px 16px rgba(124,58,237,0.3);
+            transition: transform 0.15s;
+        }
+        .btn-submit:hover { transform: scale(1.04); }
+        .btn-submit:disabled { opacity: 0.5; cursor: default; transform: none; }
+
+        /* 反馈 */
+        .feedback {
+            text-align: center; font-size: 18px; font-weight: 600;
+            min-height: 28px; margin-bottom: 8px;
+        }
+        .feedback.success { color: #10b981; }
+        .feedback.fail { color: #ef4444; }
+
+        /* 解析 */
+        .explanation {
+            background: #fffbeb; border: 1px solid #fde68a;
+            border-radius: 10px; padding: 14px; margin-top: 12px;
+            font-size: 14px; color: #92400e; display: none;
+        }
+
+        /* 历史 */
+        .history { margin-top: 24px; }
+        .history h3 { font-size: 16px; color: #5b21b6; margin-bottom: 10px; }
+        .history-list { max-height: 200px; overflow-y: auto; }
+        .history-item {
+            display: flex; justify-content: space-between;
+            padding: 8px 12px; border-radius: 8px; margin-bottom: 4px;
+            font-size: 13px; background: #f9fafb;
+        }
+        .history-item .tag-ok { color: #10b981; }
+        .history-item .tag-fail { color: #ef4444; }
+
+        @media (max-width: 500px) {
+            .container { padding: 18px; }
+            .seq-num, .seq-input { width: 44px; height: 44px; font-size: 18px; }
+            header h1 { font-size: 22px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="../index.html" class="back-link">← 返回导航</a>
+    <header>
+        <h1>🔢 数字规律推理器</h1>
+        <p>找出数列中的规律，填写缺失的数字</p>
+    </header>
+
+    <div class="controls">
+        <select id="difficulty">
+            <option value="easy">⭐ 简单</option>
+            <option value="medium" selected>⭐⭐ 中等</option>
+            <option value="hard">⭐⭐⭐ 困难</option>
+        </select>
+        <button class="btn-primary" onclick="newQuestion()">出题</button>
+        <button class="btn-hint" onclick="showHint()">💡 提示</button>
+    </div>
+
+    <div class="stats">
+        答对 <span id="correctCount">0</span> 题 &nbsp;|&nbsp;
+        答错 <span id="wrongCount">0</span> 题 &nbsp;|&nbsp;
+        连对 <span id="streak">0</span> 🔥
+    </div>
+
+    <div class="question-area" id="questionArea">
+        <div class="question-label" id="questionLabel">第 1 题</div>
+        <div class="rule-hint" id="ruleHint"></div>
+        <div class="sequence" id="sequence"></div>
+    </div>
+
+    <div class="submit-row">
+        <button class="btn-submit" id="submitBtn" onclick="checkAnswer()">✅ 提交答案</button>
+    </div>
+
+    <div class="feedback" id="feedback"></div>
+    <div class="explanation" id="explanation"></div>
+
+    <div class="history">
+        <h3>📋 答题记录</h3>
+        <div class="history-list" id="historyList"></div>
+    </div>
+</div>
+
+<script>
+// ========== 题目生成引擎 ==========
+let currentQ = null;
+let stats = { correct: 0, wrong: 0, streak: 0, total: 0 };
+
+// 规律类型生成器
+const generators = {
+    // 等差数列
+    arithmetic(diff) {
+        const start = randInt(1, 20);
+        const d = diff === 'easy' ? randInt(1,5) : diff === 'medium' ? randInt(-8,8,true) : randInt(-15,15,true);
+        const seq = [];
+        for (let i = 0; i < 7; i++) seq.push(start + d * i);
+        return { seq, rule: `等差数列，公差为 ${d}（每个数${d>=0?'加':'减'} ${Math.abs(d)}）`, type: '等差' };
+    },
+    // 等比数列
+    geometric(diff) {
+        const r = diff === 'easy' ? randChoice([2,3]) : randChoice([2,3,4,-2,-3]);
+        const start = randChoice([1,2,3]);
+        const seq = [];
+        let v = start;
+        for (let i = 0; i < 6; i++) { seq.push(v); v *= r; }
+        if (seq.some(n => Math.abs(n) > 9999)) return generators.arithmetic(diff);
+        return { seq, rule: `等比数列，公比为 ${r}（每个数乘以 ${r}）`, type: '等比' };
+    },
+    // 平方数列
+    square(diff) {
+        const offset = diff === 'easy' ? 0 : randInt(-3,3);
+        const startN = randInt(1,4);
+        const seq = [];
+        for (let i = 0; i < 6; i++) seq.push((startN+i)*(startN+i) + offset);
+        return { seq, rule: `平方数列：n² ${offset>=0?'+ '+offset:'- '+Math.abs(offset)}（从 ${startN}² 开始）`, type: '平方' };
+    },
+    // 斐波那契型
+    fibonacci(diff) {
+        const a = randInt(1,5), b = randInt(1,5);
+        const seq = [a, b];
+        for (let i = 2; i < 7; i++) seq.push(seq[i-1] + seq[i-2]);
+        return { seq, rule: `斐波那契型：每个数 = 前两个数之和`, type: '斐波那契' };
+    },
+    // 递增差
+    increasingDiff(diff) {
+        const start = randInt(1,10);
+        const dStart = randInt(1,3);
+        const dInc = randInt(1,3);
+        const seq = [start];
+        let d = dStart;
+        for (let i = 1; i < 7; i++) { seq.push(seq[i-1] + d); d += dInc; }
+        return { seq, rule: `差递增数列：相邻差依次为 ${dStart}, ${dStart+dInc}, ${dStart+2*dInc}...（差每次增加 ${dInc}）`, type: '递增差' };
+    },
+    // 交替数列
+    alternating(diff) {
+        const a = randInt(1,5), da = randChoice([2,3,4]);
+        const b = randInt(10,15), db = randChoice([-2,-3,3]);
+        const seq = [];
+        for (let i = 0; i < 8; i++) {
+            seq.push(i % 2 === 0 ? a + da * (i/2) : b + db * ((i-1)/2));
+        }
+        return { seq, rule: `交替数列：奇数位 ${a},${a+da},${a+2*da}...（+${da}），偶数位 ${b},${b+db},${b+2*db}...（${db>=0?'+':''}${db}）`, type: '交替' };
+    },
+    // 三角数
+    triangular(diff) {
+        const startN = randInt(1,3);
+        const seq = [];
+        for (let i = 0; i < 7; i++) { const n = startN+i; seq.push(n*(n+1)/2); }
+        return { seq, rule: `三角数列：n(n+1)/2，即 1,3,6,10,15...`, type: '三角数' };
+    }
+};
+
+const difficultyMap = {
+    easy: ['arithmetic', 'geometric'],
+    medium: ['arithmetic', 'geometric', 'square', 'fibonacci', 'increasingDiff'],
+    hard: ['arithmetic', 'geometric', 'square', 'fibonacci', 'increasingDiff', 'alternating', 'triangular']
+};
+
+function randInt(a, b, nonZero) {
+    let v;
+    do { v = Math.floor(Math.random() * (b - a + 1)) + a; } while (nonZero && v === 0);
+    return v;
+}
+function randChoice(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function generateQuestion() {
+    const diff = document.getElementById('difficulty').value;
+    const types = difficultyMap[diff];
+    const type = randChoice(types);
+    const result = generators[type](diff);
+    const seq = result.seq;
+
+    // 选 1~2 个位置挖空（不挖第一个）
+    const blankCount = diff === 'easy' ? 1 : diff === 'medium' ? randChoice([1,2]) : 2;
+    const indices = [];
+    const available = seq.map((_,i) => i).filter(i => i > 0);
+    for (let i = 0; i < blankCount; i++) {
+        const pick = randChoice(available);
+        indices.push(pick);
+        available.splice(available.indexOf(pick), 1);
+    }
+    indices.sort((a,b) => a - b);
+
+    return {
+        seq,
+        blanks: indices,
+        answers: indices.map(i => seq[i]),
+        rule: result.rule,
+        type: result.type
+    };
+}
+
+// ========== UI ==========
+function newQuestion() {
+    stats.total++;
+    currentQ = generateQuestion();
+    renderSequence();
+    document.getElementById('questionLabel').textContent = `第 ${stats.total} 题`;
+    document.getElementById('ruleHint').textContent = '';
+    document.getElementById('feedback').textContent = '';
+    document.getElementById('feedback').className = 'feedback';
+    document.getElementById('explanation').style.display = 'none';
+    document.getElementById('submitBtn').disabled = false;
+}
+
+function renderSequence() {
+    const el = document.getElementById('sequence');
+    el.innerHTML = '';
+    currentQ.seq.forEach((num, i) => {
+        if (i > 0) {
+            const arrow = document.createElement('span');
+            arrow.className = 'seq-arrow';
+            arrow.textContent = '→';
+            el.appendChild(arrow);
+        }
+        if (currentQ.blanks.includes(i)) {
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.className = 'seq-input';
+            input.dataset.index = i;
+            input.setAttribute('aria-label', `第${i+1}个数字，请填写`);
+            input.addEventListener('keydown', e => { if (e.key === 'Enter') checkAnswer(); });
+            el.appendChild(input);
+        } else {
+            const box = document.createElement('div');
+            box.className = 'seq-num';
+            box.textContent = num;
+            el.appendChild(box);
+        }
+    });
+    // 聚焦第一个输入框
+    const first = el.querySelector('.seq-input');
+    if (first) setTimeout(() => first.focus(), 100);
+}
+
+function checkAnswer() {
+    if (!currentQ) return;
+    const inputs = document.querySelectorAll('.seq-input');
+    let allCorrect = true;
+    const userAnswers = [];
+
+    inputs.forEach(inp => {
+        const idx = parseInt(inp.dataset.index);
+        const expected = currentQ.seq[idx];
+        const val = parseInt(inp.value);
+        userAnswers.push(val);
+        if (val === expected) {
+            inp.classList.remove('wrong');
+            inp.classList.add('correct');
+        } else {
+            inp.classList.remove('correct');
+            inp.classList.add('wrong');
+            allCorrect = false;
+        }
+    });
+
+    const fb = document.getElementById('feedback');
+    const exp = document.getElementById('explanation');
+
+    if (allCorrect) {
+        stats.correct++;
+        stats.streak++;
+        fb.textContent = randChoice(['🎉 太棒了！完全正确！', '✨ 答对了！你真聪明！', '👏 厉害！一次就对了！', '🌟 完美！继续保持！']);
+        fb.className = 'feedback success';
+    } else {
+        stats.wrong++;
+        stats.streak = 0;
+        fb.textContent = `❌ 不对哦，正确答案是 ${currentQ.answers.join(', ')}`;
+        fb.className = 'feedback fail';
+    }
+
+    exp.textContent = '📖 规律解析：' + currentQ.rule;
+    exp.style.display = 'block';
+    document.getElementById('submitBtn').disabled = true;
+    updateStats();
+    addHistory(allCorrect);
+
+    // 1.5秒后自动下一题
+    setTimeout(() => newQuestion(), 2200);
+}
+
+function showHint() {
+    if (!currentQ) return;
+    const hint = document.getElementById('ruleHint');
+    hint.textContent = '💡 提示：这是一个' + currentQ.type + '类型的规律';
+}
+
+function updateStats() {
+    document.getElementById('correctCount').textContent = stats.correct;
+    document.getElementById('wrongCount').textContent = stats.wrong;
+    document.getElementById('streak').textContent = stats.streak;
+}
+
+function addHistory(ok) {
+    const list = document.getElementById('historyList');
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    const seqStr = currentQ.seq.map((n,i) => currentQ.blanks.includes(i) ? `[${n}]` : n).join(', ');
+    div.innerHTML = `<span>第${stats.total}题：${seqStr}</span><span class="${ok?'tag-ok':'tag-fail'}">${ok?'✅ 正确':'❌ 错误'}</span>`;
+    list.prepend(div);
+}
+
+// 初始化
+newQuestion();
+</script>
+</body>
+</html>
