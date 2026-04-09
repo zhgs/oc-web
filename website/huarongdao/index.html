@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧩 数字华容道</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            user-select: none;
+        }
+
+        .back-link {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            text-decoration: none;
+            font-size: 1.1em;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+        .back-link:hover { opacity: 1; }
+
+        h1 {
+            color: white;
+            font-size: 2.2em;
+            margin: 20px 0 10px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .description {
+            color: rgba(255,255,255,0.85);
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* 难度选择 */
+        .difficulty {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .diff-btn {
+            padding: 10px 24px;
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 25px;
+            background: rgba(255,255,255,0.15);
+            color: white;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .diff-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .diff-btn.active {
+            background: white;
+            color: #764ba2;
+            border-color: white;
+        }
+
+        /* 信息栏 */
+        .info-bar {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+            color: white;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+        .info-bar span {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 20px;
+            border-radius: 20px;
+        }
+
+        /* 游戏面板 */
+        .board-wrapper {
+            position: relative;
+            background: rgba(255,255,255,0.15);
+            border-radius: 20px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .board {
+            display: grid;
+            gap: 6px;
+            touch-action: none;
+        }
+
+        .tile {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.15s ease, background 0.2s;
+            position: relative;
+        }
+
+        .tile:not(.empty):hover {
+            transform: scale(1.05);
+            filter: brightness(1.1);
+        }
+
+        .tile:not(.empty):active {
+            transform: scale(0.95);
+        }
+
+        .tile.empty {
+            background: rgba(255,255,255,0.08) !important;
+            cursor: default;
+            border: 2px dashed rgba(255,255,255,0.2);
+        }
+
+        /* 按钮区 */
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .ctrl-btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-restart {
+            background: #ff6b6b;
+            color: white;
+        }
+        .btn-restart:hover { background: #ee5a5a; }
+
+        .btn-shuffle {
+            background: #feca57;
+            color: #333;
+        }
+        .btn-shuffle:hover { background: #f0b942; }
+
+        /* 胜利弹窗 */
+        .win-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .win-overlay.show {
+            display: flex;
+        }
+
+        .win-box {
+            background: white;
+            border-radius: 24px;
+            padding: 40px 50px;
+            text-align: center;
+            animation: popIn 0.4s ease;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .win-box h2 {
+            font-size: 2em;
+            color: #764ba2;
+            margin-bottom: 10px;
+        }
+        .win-box p {
+            font-size: 1.1em;
+            color: #555;
+            margin-bottom: 20px;
+        }
+        .win-box button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .win-box button:hover {
+            filter: brightness(1.1);
+        }
+
+        /* 色彩方案 */
+        .color-1 { background: #ff6b6b; color: white; }
+        .color-2 { background: #feca57; color: #333; }
+        .color-3 { background: #48dbfb; color: #333; }
+        .color-4 { background: #ff9ff3; color: #333; }
+        .color-5 { background: #54a0ff; color: white; }
+        .color-6 { background: #5f27cd; color: white; }
+        .color-7 { background: #01a3a4; color: white; }
+        .color-8 { background: #f368e0; color: white; }
+        .color-9 { background: #ff9f43; color: white; }
+        .color-10 { background: #ee5a24; color: white; }
+        .color-11 { background: #0abde3; color: white; }
+        .color-12 { background: #10ac84; color: white; }
+        .color-13 { background: #6c5ce7; color: white; }
+        .color-14 { background: #fdcb6e; color: #333; }
+        .color-15 { background: #e17055; color: white; }
+        .color-16 { background: #00b894; color: white; }
+        .color-17 { background: #e84393; color: white; }
+        .color-18 { background: #0984e3; color: white; }
+        .color-19 { background: #d63031; color: white; }
+        .color-20 { background: #6ab04c; color: white; }
+        .color-21 { background: #eb4d4b; color: white; }
+        .color-22 { background: #7ed6df; color: #333; }
+        .color-23 { background: #e056fd; color: white; }
+        .color-24 { background: #22a6b3; color: white; }
+
+        @media (max-width: 500px) {
+            h1 { font-size: 1.6em; }
+            .info-bar { gap: 15px; font-size: 1em; }
+            .board-wrapper { padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-link">← 返回导航</a>
+
+    <h1>🧩 数字华容道</h1>
+    <p class="description">移动数字方块，按顺序排列，训练空间逻辑思维！</p>
+
+    <div class="difficulty">
+        <button class="diff-btn active" onclick="setSize(3)">3×3 简单</button>
+        <button class="diff-btn" onclick="setSize(4)">4×4 中等</button>
+        <button class="diff-btn" onclick="setSize(5)">5×5 困难</button>
+    </div>
+
+    <div class="info-bar">
+        <span>⏱️ <span id="timer">00:00</span></span>
+        <span>👣 <span id="moves">0</span> 步</span>
+    </div>
+
+    <div class="board-wrapper">
+        <div class="board" id="board"></div>
+    </div>
+
+    <div class="controls">
+        <button class="ctrl-btn btn-shuffle" onclick="shuffle()">🔀 打乱</button>
+        <button class="ctrl-btn btn-restart" onclick="restart()">🔄 重新开始</button>
+    </div>
+
+    <!-- 胜利弹窗 -->
+    <div class="win-overlay" id="winOverlay">
+        <div class="win-box">
+            <h2>🎉 恭喜通关！</h2>
+            <p id="winMsg"></p>
+            <button onclick="closeWin()">再来一局</button>
+        </div>
+    </div>
+
+    <script>
+        let size = 3;
+        let tiles = [];
+        let moves = 0;
+        let seconds = 0;
+        let timerInterval = null;
+        let gameStarted = false;
+        let gameWon = false;
+
+        // 拖拽相关
+        let dragTile = null;
+        let startX = 0, startY = 0;
+
+        function setSize(n) {
+            size = n;
+            document.querySelectorAll('.diff-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', [3,4,5][i] === n);
+            });
+            restart();
+        }
+
+        function restart() {
+            stopTimer();
+            moves = 0;
+            seconds = 0;
+            gameStarted = false;
+            gameWon = false;
+            document.getElementById('moves').textContent = '0';
+            document.getElementById('timer').textContent = '00:00';
+
+            // 生成有序数列
+            tiles = [];
+            for (let i = 1; i < size * size; i++) tiles.push(i);
+            tiles.push(0); // 0 代表空位
+
+            shuffle();
+        }
+
+        function shuffle() {
+            stopTimer();
+            moves = 0;
+            seconds = 0;
+            gameStarted = false;
+            gameWon = false;
+            document.getElementById('moves').textContent = '0';
+            document.getElementById('timer').textContent = '00:00';
+
+            // Fisher-Yates 打乱
+            let arr = [];
+            for (let i = 1; i < size * size; i++) arr.push(i);
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            arr.push(0);
+
+            // 确保可解
+            while (!isSolvable(arr)) {
+                // 交换前两个非零元素
+                [arr[0], arr[1]] = [arr[1], arr[0]];
+            }
+
+            tiles = arr;
+            render();
+        }
+
+        function isSolvable(arr) {
+            let inversions = 0;
+            const flat = arr.filter(x => x !== 0);
+            for (let i = 0; i < flat.length; i++) {
+                for (let j = i + 1; j < flat.length; j++) {
+                    if (flat[i] > flat[j]) inversions++;
+                }
+            }
+            if (size % 2 === 1) {
+                return inversions % 2 === 0;
+            } else {
+                const emptyRow = Math.floor(arr.indexOf(0) / size);
+                const fromBottom = size - emptyRow;
+                return (inversions + fromBottom) % 2 === 0;
+            }
+        }
+
+        function render() {
+            const board = document.getElementById('board');
+            const tileSize = size === 3 ? 100 : size === 4 ? 80 : 65;
+
+            board.style.gridTemplateColumns = `repeat(${size}, ${tileSize}px)`;
+            board.style.gridTemplateRows = `repeat(${size}, ${tileSize}px)`;
+            board.innerHTML = '';
+
+            tiles.forEach((num, idx) => {
+                const tile = document.createElement('div');
+                tile.className = 'tile' + (num === 0 ? ' empty' : ` color-${num}`);
+                tile.style.width = tileSize + 'px';
+                tile.style.height = tileSize + 'px';
+                tile.style.fontSize = (size === 5 ? 1.2 : size === 4 ? 1.5 : 1.8) + 'em';
+                tile.textContent = num === 0 ? '' : num;
+                tile.dataset.index = idx;
+
+                if (num !== 0) {
+                    // 点击移动
+                    tile.addEventListener('click', () => moveTile(idx));
+
+                    // 触摸/拖拽支持
+                    tile.addEventListener('mousedown', onDragStart);
+                    tile.addEventListener('touchstart', onDragStart, { passive: false });
+                }
+
+                board.appendChild(tile);
+            });
+        }
+
+        function onDragStart(e) {
+            if (gameWon) return;
+            e.preventDefault();
+            const touch = e.touches ? e.touches[0] : e;
+            dragTile = parseInt(e.currentTarget.dataset.index);
+            startX = touch.clientX;
+            startY = touch.clientY;
+
+            document.addEventListener('mouseup', onDragEnd);
+            document.addEventListener('touchend', onDragEnd, { passive: false });
+        }
+
+        function onDragEnd(e) {
+            if (dragTile === null) return;
+            const touch = e.changedTouches ? e.changedTouches[0] : e;
+            const dx = touch.clientX - startX;
+            const dy = touch.clientY - startY;
+            const absDx = Math.abs(dx);
+            const absDy = Math.abs(dy);
+
+            // 如果拖拽距离很小，当作点击处理（click事件已处理）
+            if (absDx < 10 && absDy < 10) {
+                dragTile = null;
+                cleanup();
+                return;
+            }
+
+            const emptyIdx = tiles.indexOf(0);
+            const dragRow = Math.floor(dragTile / size);
+            const dragCol = dragTile % size;
+            const emptyRow = Math.floor(emptyIdx / size);
+            const emptyCol = emptyIdx % size;
+
+            let targetIdx = -1;
+
+            if (absDx > absDy) {
+                // 水平拖拽
+                if (dx > 0 && dragRow === emptyRow && dragCol + 1 === emptyCol) targetIdx = emptyIdx;
+                if (dx < 0 && dragRow === emptyRow && dragCol - 1 === emptyCol) targetIdx = emptyIdx;
+            } else {
+                // 垂直拖拽
+                if (dy > 0 && dragCol === emptyCol && dragRow + 1 === emptyRow) targetIdx = emptyIdx;
+                if (dy < 0 && dragCol === emptyCol && dragRow - 1 === emptyRow) targetIdx = emptyIdx;
+            }
+
+            if (targetIdx >= 0) {
+                doMove(dragTile);
+            }
+
+            dragTile = null;
+            cleanup();
+        }
+
+        function cleanup() {
+            document.removeEventListener('mouseup', onDragEnd);
+            document.removeEventListener('touchend', onDragEnd);
+        }
+
+        function moveTile(idx) {
+            if (gameWon) return;
+            const emptyIdx = tiles.indexOf(0);
+            const row = Math.floor(idx / size), col = idx % size;
+            const eRow = Math.floor(emptyIdx / size), eCol = emptyIdx % size;
+
+            const isAdjacent =
+                (row === eRow && Math.abs(col - eCol) === 1) ||
+                (col === eCol && Math.abs(row - eRow) === 1);
+
+            if (isAdjacent) {
+                doMove(idx);
+            }
+        }
+
+        function doMove(idx) {
+            const emptyIdx = tiles.indexOf(0);
+            [tiles[idx], tiles[emptyIdx]] = [tiles[emptyIdx], tiles[idx]];
+            moves++;
+            document.getElementById('moves').textContent = moves;
+
+            if (!gameStarted) {
+                gameStarted = true;
+                startTimer();
+            }
+
+            render();
+            checkWin();
+        }
+
+        function checkWin() {
+            for (let i = 0; i < size * size - 1; i++) {
+                if (tiles[i] !== i + 1) return;
+            }
+            // 胜利！
+            gameWon = true;
+            stopTimer();
+            const msg = `用时 ${formatTime(seconds)}，共 ${moves} 步完成 ${size}×${size} 华容道！`;
+            document.getElementById('winMsg').textContent = msg;
+            setTimeout(() => {
+                document.getElementById('winOverlay').classList.add('show');
+            }, 300);
+        }
+
+        function closeWin() {
+            document.getElementById('winOverlay').classList.remove('show');
+            shuffle();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                seconds++;
+                document.getElementById('timer').textContent = formatTime(seconds);
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function formatTime(s) {
+            const m = Math.floor(s / 60);
+            const sec = s % 60;
+            return String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+        }
+
+        // 初始化
+        restart();
+    </script>
+</body>
+</html>
