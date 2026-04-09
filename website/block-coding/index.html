@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧩 儿童编程积木逻辑器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            user-select: none;
+        }
+        .header { text-align: center; margin: 10px 0; }
+        .header h1 { font-size: 1.8em; color: #4a4a8a; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
+        .header p { color: #666; font-size: 0.95em; margin-top: 4px; }
+
+        .main-container {
+            display: flex;
+            gap: 16px;
+            max-width: 1200px;
+            width: 100%;
+            margin: 10px auto;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* 左侧：积木库 */
+        .block-palette {
+            width: 200px;
+            flex-shrink: 0;
+            background: rgba(255,255,255,0.9);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        .block-palette h3 {
+            color: #4a4a8a;
+            font-size: 1.05em;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e0e0f0;
+            text-align: center;
+        }
+        .palette-section { margin-bottom: 14px; }
+        .palette-section-title { font-size: 0.85em; color: #888; margin-bottom: 6px; font-weight: bold; }
+
+        .block {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: grab;
+            margin-bottom: 8px;
+            transition: transform 0.15s, box-shadow 0.15s;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        .block:active { cursor: grabbing; }
+        .block:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+
+        .block-forward { background: linear-gradient(135deg, #4CAF50, #45a049); }
+        .block-left { background: linear-gradient(135deg, #2196F3, #1976D2); }
+        .block-right { background: linear-gradient(135deg, #FF9800, #F57C00); }
+        .block-repeat { background: linear-gradient(135deg, #9C27B0, #7B1FA2); min-height: 60px; }
+
+        .block .block-icon { font-size: 1.2em; }
+
+        /* 重复积木的次数输入 */
+        .repeat-count {
+            background: rgba(255,255,255,0.3);
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 6px;
+            width: 36px;
+            text-align: center;
+            font-size: 0.9em;
+            font-weight: bold;
+            color: #fff;
+            padding: 2px;
+            outline: none;
+        }
+        .repeat-count:focus { border-color: #fff; background: rgba(255,255,255,0.5); }
+
+        /* 中间：指令区 */
+        .program-area {
+            flex: 1;
+            min-width: 280px;
+            max-width: 360px;
+            display: flex;
+            flex-direction: column;
+        }
+        .program-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .program-header h3 { color: #4a4a8a; font-size: 1.05em; }
+        .program-controls { display: flex; gap: 8px; }
+        .program-controls button {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 16px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+        .btn-run {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: #fff;
+            box-shadow: 0 3px 8px rgba(76,175,80,0.4);
+        }
+        .btn-run:hover { transform: translateY(-2px); }
+        .btn-run:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-clear {
+            background: linear-gradient(135deg, #ef5350, #d32f2f);
+            color: #fff;
+            box-shadow: 0 3px 8px rgba(239,83,80,0.3);
+        }
+        .btn-clear:hover { transform: translateY(-2px); }
+        .btn-step {
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+            color: #fff;
+            box-shadow: 0 3px 8px rgba(255,152,0,0.3);
+        }
+        .btn-step:hover { transform: translateY(-2px); }
+        .btn-step:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .program-list {
+            background: rgba(255,255,255,0.9);
+            border-radius: 16px;
+            padding: 16px;
+            min-height: 300px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            flex: 1;
+            position: relative;
+            overflow-y: auto;
+            max-height: 500px;
+        }
+        .program-list.drag-over {
+            background: rgba(255,255,255,0.95);
+            border: 2px dashed #9C27B0;
+        }
+        .program-list .placeholder {
+            color: #bbb;
+            text-align: center;
+            padding: 40px 20px;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+        .program-list .placeholder .big-icon { font-size: 2.5em; display: block; margin-bottom: 10px; }
+
+        .program-block {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.95em;
+            font-weight: 600;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            margin-bottom: 6px;
+            position: relative;
+            animation: slideIn 0.2s ease;
+        }
+        .program-block.highlight {
+            outline: 3px solid #FFD600;
+            outline-offset: 2px;
+            box-shadow: 0 0 15px rgba(255,214,0,0.5);
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .program-block .remove-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.3);
+            border: none;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 0.8em;
+            cursor: pointer;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .program-block:hover .remove-btn { opacity: 1; }
+        .program-block .remove-btn:hover { background: rgba(255,255,255,0.5); }
+
+        /* 重复块内嵌 */
+        .repeat-container {
+            margin-bottom: 6px;
+            animation: slideIn 0.2s ease;
+        }
+        .repeat-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 10px 10px 0 0;
+            font-size: 0.95em;
+            font-weight: 600;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+            position: relative;
+        }
+        .repeat-header.highlight {
+            outline: 3px solid #FFD600;
+            outline-offset: 2px;
+            box-shadow: 0 0 15px rgba(255,214,0,0.5);
+        }
+        .repeat-header .remove-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.3);
+            border: none;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 0.8em;
+            cursor: pointer;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .repeat-header:hover .remove-btn { opacity: 1; }
+        .repeat-body {
+            border-left: 4px solid #9C27B0;
+            border-right: 4px solid #9C27B0;
+            background: rgba(156,39,176,0.08);
+            padding: 8px 10px;
+            min-height: 50px;
+        }
+        .repeat-body.drag-over {
+            background: rgba(156,39,176,0.18);
+            border-left: 4px dashed #9C27B0;
+            border-right: 4px dashed #9C27B0;
+        }
+        .repeat-body .inner-placeholder {
+            color: #bbb;
+            text-align: center;
+            padding: 12px;
+            font-size: 0.85em;
+        }
+        .repeat-footer {
+            height: 10px;
+            background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+            border-radius: 0 0 10px 10px;
+        }
+
+        /* 右侧：画布区 */
+        .canvas-area {
+            width: 360px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .canvas-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .canvas-header h3 { color: #4a4a8a; font-size: 1.05em; }
+        .level-select {
+            padding: 6px 12px;
+            border: 2px solid #b8b8e8;
+            border-radius: 16px;
+            background: #fff;
+            color: #4a4a8a;
+            font-size: 0.9em;
+            outline: none;
+            cursor: pointer;
+        }
+        .canvas-wrapper {
+            background: rgba(255,255,255,0.9);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            width: 100%;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 8px;
+            border: 2px solid #e0e0f0;
+        }
+        .goal-info {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+            line-height: 1.6;
+        }
+        .goal-info strong { color: #4a4a8a; }
+
+        /* 结果弹窗 */
+        .result-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .result-overlay.show { display: flex; }
+        .result-box {
+            background: #fff;
+            border-radius: 20px;
+            padding: 30px 40px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: popIn 0.4s ease;
+            max-width: 360px;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .result-box h2 { font-size: 1.8em; color: #4a4a8a; margin-bottom: 10px; }
+        .result-box p { color: #666; font-size: 1em; margin: 6px 0; }
+        .result-box .stars { font-size: 2.5em; margin: 10px 0; }
+        .result-box button {
+            margin: 8px 6px 0;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 20px;
+            font-size: 1em;
+            cursor: pointer;
+            color: #fff;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transition: all 0.2s;
+        }
+        .result-box button:hover { transform: translateY(-2px); }
+
+        /* 返回按钮 */
+        .btn-back {
+            display: inline-block;
+            padding: 6px 16px;
+            background: linear-gradient(135deg, #a1c4fd, #c2e9fb);
+            color: #4a4a8a;
+            border: none;
+            border-radius: 16px;
+            font-size: 0.9em;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-back:hover { transform: translateY(-2px); }
+
+        /* 拖拽中的块样式 */
+        .dragging { opacity: 0.5; }
+
+        /* 速度控制 */
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+        .speed-control label { font-size: 0.85em; color: #666; }
+        .speed-control input[type="range"] { width: 100px; }
+
+        /* 步数指示 */
+        .step-counter {
+            text-align: center;
+            margin-top: 8px;
+            font-size: 0.85em;
+            color: #888;
+        }
+
+        @media (max-width: 900px) {
+            .main-container { flex-direction: column; align-items: center; }
+            .block-palette { width: 100%; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+            .block-palette h3 { width: 100%; }
+            .palette-section { display: flex; flex-wrap: wrap; gap: 6px; }
+            .palette-section-title { width: 100%; }
+            .program-area { max-width: 100%; }
+            .canvas-area { width: 100%; max-width: 400px; }
+        }
+        @media (max-width: 500px) {
+            .header h1 { font-size: 1.4em; }
+            .block { padding: 8px 10px; font-size: 0.85em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧩 儿童编程积木逻辑器</h1>
+        <p>拖拽积木编写指令，控制小角色到达终点！</p>
+    </div>
+
+    <div class="main-container">
+        <!-- 左侧：积木库 -->
+        <div class="block-palette">
+            <h3>🧱 积木库</h3>
+            <div class="palette-section">
+                <div class="palette-section-title">🏃 动作</div>
+                <div class="block block-forward" draggable="true" data-type="forward">
+                    <span class="block-icon">⬆️</span> 前进一步
+                </div>
+                <div class="block block-left" draggable="true" data-type="left">
+                    <span class="block-icon">↩️</span> 左转 90°
+                </div>
+                <div class="block block-right" draggable="true" data-type="right">
+                    <span class="block-icon">↪️</span> 右转 90°
+                </div>
+            </div>
+            <div class="palette-section">
+                <div class="palette-section-title">🔁 控制</div>
+                <div class="block block-repeat" draggable="true" data-type="repeat">
+                    <span class="block-icon">🔄</span> 重复
+                    <input type="number" class="repeat-count" value="2" min="1" max="10" onclick="event.stopPropagation()" draggable="false">
+                    次
+                </div>
+            </div>
+            <div style="margin-top:14px;">
+                <a href="../index.html" class="btn-back">🏠 返回首页</a>
+            </div>
+        </div>
+
+        <!-- 中间：指令区 -->
+        <div class="program-area">
+            <div class="program-header">
+                <h3>📋 我的程序</h3>
+                <div class="program-controls">
+                    <button class="btn-step" id="btnStep" onclick="stepProgram()">👣 单步</button>
+                    <button class="btn-run" id="btnRun" onclick="runProgram()">▶️ 运行</button>
+                    <button class="btn-clear" onclick="clearProgram()">🗑️ 清空</button>
+                </div>
+            </div>
+            <div class="program-list" id="programList">
+                <div class="placeholder">
+                    <span class="big-icon">👆</span>
+                    从左侧拖拽积木到这里<br>组合成你的程序！
+                </div>
+            </div>
+            <div class="step-counter" id="stepCounter"></div>
+        </div>
+
+        <!-- 右侧：画布 -->
+        <div class="canvas-area">
+            <div class="canvas-header">
+                <h3>🗺️ 游戏地图</h3>
+                <select class="level-select" id="levelSelect" onchange="loadLevel()">
+                    <option value="0">🌱 第1关 直线</option>
+                    <option value="1">🌿 第2关 转弯</option>
+                    <option value="2">🌿 第3关 L形</option>
+                    <option value="3">🌳 第4关 Z形</option>
+                    <option value="4">🌳 第5关 螺旋</option>
+                    <option value="5">🔥 第6关 迷宫</option>
+                    <option value="6">🔥 第7关 挑战</option>
+                    <option value="7">💎 第8关 大师</option>
+                </select>
+            </div>
+            <div class="canvas-wrapper">
+                <canvas id="gameCanvas" width="320" height="320"></canvas>
+                <div class="goal-info" id="goalInfo"></div>
+                <div class="speed-control">
+                    <label>🐢</label>
+                    <input type="range" id="speedSlider" min="1" max="5" value="3">
+                    <label>🐇</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 结果弹窗 -->
+    <div class="result-overlay" id="resultOverlay">
+        <div class="result-box">
+            <h2 id="resultTitle"></h2>
+            <div class="stars" id="resultStars"></div>
+            <p id="resultMsg"></p>
+            <p id="resultBlocks"></p>
+            <button onclick="resetLevel()">🔄 重试</button>
+            <button onclick="nextLevel()" id="btnNext">⏩ 下一关</button>
+        </div>
+    </div>
+
+<script>
+// ========== 关卡定义 ==========
+const CELL = 40;
+const GRID = 8;
+
+// 方向: 0=上, 1=右, 2=下, 3=左
+const DIR_DX = [0, 1, 0, -1];
+const DIR_DY = [-1, 0, 1, 0];
+const DIR_EMOJI = ['⬆️', '➡️', '⬇️', '⬅️'];
+const DIR_ANGLE = [0, 90, 180, 270];
+
+const LEVELS = [
+    {
+        name: '直线前进',
+        hint: '使用3个"前进"积木到达终点',
+        start: { x: 1, y: 6, dir: 0 },
+        goal: { x: 1, y: 3 },
+        walls: [],
+        path: [{x:1,y:6},{x:1,y:5},{x:1,y:4},{x:1,y:3}],
+        optimal: 3
+    },
+    {
+        name: '学会转弯',
+        hint: '前进2步，右转，再前进2步',
+        start: { x: 1, y: 5, dir: 0 },
+        goal: { x: 3, y: 3 },
+        walls: [],
+        path: [{x:1,y:5},{x:1,y:4},{x:1,y:3},{x:2,y:3},{x:3,y:3}],
+        optimal: 5
+    },
+    {
+        name: 'L形路线',
+        hint: '前进3步，右转，前进2步',
+        start: { x: 2, y: 6, dir: 0 },
+        goal: { x: 4, y: 3 },
+        walls: [],
+        path: [{x:2,y:6},{x:2,y:5},{x:2,y:4},{x:2,y:3},{x:3,y:3},{x:4,y:3}],
+        optimal: 6
+    },
+    {
+        name: 'Z形路线',
+        hint: '试试：前进→右转→前进→左转→前进',
+        start: { x: 1, y: 6, dir: 0 },
+        goal: { x: 3, y: 2 },
+        walls: [],
+        path: [{x:1,y:6},{x:1,y:5},{x:1,y:4},{x:2,y:4},{x:3,y:4},{x:3,y:3},{x:3,y:2}],
+        optimal: 8
+    },
+    {
+        name: '螺旋路线',
+        hint: '用"重复"积木简化你的程序！',
+        start: { x: 1, y: 6, dir: 0 },
+        goal: { x: 3, y: 4 },
+        walls: [],
+        path: [{x:1,y:6},{x:1,y:5},{x:1,y:4},{x:1,y:3},{x:2,y:3},{x:3,y:3},{x:3,y:4}],
+        optimal: 4  // 重复2次{前进2步,右转}
+    },
+    {
+        name: '迷宫挑战',
+        hint: '观察路径，合理组合积木',
+        start: { x: 0, y: 7, dir: 0 },
+        goal: { x: 5, y: 1 },
+        walls: [
+            {x:2,y:7},{x:2,y:6},{x:2,y:5},
+            {x:4,y:5},{x:4,y:4},{x:4,y:3},
+            {x:1,y:3},{x:2,y:3},{x:3,y:3},
+            {x:6,y:2},{x:6,y:1}
+        ],
+        path: [{x:0,y:7},{x:0,y:6},{x:0,y:5},{x:0,y:4},{x:1,y:4},{x:1,y:5},{x:1,y:6},{x:1,y:7}], // example, not enforced
+        optimal: 12
+    },
+    {
+        name: '综合挑战',
+        hint: '多次转弯+重复，找到最短路径',
+        start: { x: 0, y: 7, dir: 1 },
+        goal: { x: 7, y: 0 },
+        walls: [
+            {x:3,y:7},{x:3,y:6},
+            {x:5,y:5},{x:5,y:4},{x:5,y:3},
+            {x:2,y:3},{x:3,y:3},
+            {x:7,y:3},{x:7,y:2}
+        ],
+        path: [],
+        optimal: 14
+    },
+    {
+        name: '大师关卡',
+        hint: '善用重复积木，挑战最少积木通关！',
+        start: { x: 0, y: 7, dir: 0 },
+        goal: { x: 7, y: 0 },
+        walls: [
+            {x:1,y:6},{x:2,y:5},{x:3,y:4},
+            {x:4,y:6},{x:5,y:5},{x:6,y:4},
+            {x:2,y:2},{x:3,y:2},{x:4,y:2},{x:5,y:2}
+        ],
+        path: [],
+        optimal: 10
+    }
+];
+
+// ========== 游戏状态 ==========
+let currentLevel = 0;
+let player = { x: 0, y: 0, dir: 0 };
+let isRunning = false;
+let stepMode = false;
+let stepIndex = 0;
+let flatCommands = [];
+let animFrame = null;
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// ========== 关卡加载 ==========
+function loadLevel() {
+    currentLevel = parseInt(document.getElementById('levelSelect').value);
+    resetLevel();
+}
+
+function resetLevel() {
+    document.getElementById('resultOverlay').classList.remove('show');
+    const level = LEVELS[currentLevel];
+    player = { x: level.start.x, y: level.start.y, dir: level.start.dir };
+    isRunning = false;
+    stepMode = false;
+    stepIndex = 0;
+    flatCommands = [];
+    document.getElementById('btnRun').disabled = false;
+    document.getElementById('btnStep').disabled = false;
+    document.getElementById('stepCounter').textContent = '';
+    clearHighlights();
+    drawGame();
+    updateGoalInfo();
+}
+
+function updateGoalInfo() {
+    const level = LEVELS[currentLevel];
+    document.getElementById('goalInfo').innerHTML =
+        `<strong>🎯 ${level.name}</strong><br>` +
+        `💡 提示：${level.hint}<br>` +
+        `起点 (${level.start.x},${level.start.y}) → 终点 (${level.goal.x},${level.goal.y})`;
+}
+
+// ========== 画布绘制 ==========
+function drawGame() {
+    const level = LEVELS[currentLevel];
+    canvas.width = GRID * CELL;
+    canvas.height = GRID * CELL;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 网格背景
+    for (let y = 0; y < GRID; y++) {
+        for (let x = 0; x < GRID; x++) {
+            ctx.fillStyle = (x + y) % 2 === 0 ? '#f0f4ff' : '#e8ecf8';
+            ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+        }
+    }
+
+    // 网格线
+    ctx.strokeStyle = '#d0d4e8';
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i <= GRID; i++) {
+        ctx.beginPath(); ctx.moveTo(i * CELL, 0); ctx.lineTo(i * CELL, GRID * CELL); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i * CELL); ctx.lineTo(GRID * CELL, i * CELL); ctx.stroke();
+    }
+
+    // 路径提示（浅色标记可行路径）
+    if (level.path && level.path.length > 0) {
+        ctx.fillStyle = 'rgba(76, 175, 80, 0.12)';
+        level.path.forEach(p => {
+            ctx.fillRect(p.x * CELL + 2, p.y * CELL + 2, CELL - 4, CELL - 4);
+        });
+    }
+
+    // 障碍物
+    level.walls.forEach(w => {
+        ctx.fillStyle = '#78909C';
+        const margin = 3;
+        ctx.beginPath();
+        roundRect(ctx, w.x * CELL + margin, w.y * CELL + margin, CELL - margin*2, CELL - margin*2, 6);
+        ctx.fill();
+        // 石头纹理
+        ctx.fillStyle = '#90A4AE';
+        ctx.beginPath();
+        ctx.arc(w.x * CELL + CELL*0.35, w.y * CELL + CELL*0.4, 4, 0, Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(w.x * CELL + CELL*0.65, w.y * CELL + CELL*0.6, 3, 0, Math.PI*2);
+        ctx.fill();
+    });
+
+    // 终点
+    ctx.font = `${CELL * 0.7}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('⭐', level.goal.x * CELL + CELL/2, level.goal.y * CELL + CELL/2);
+
+    // 玩家（带方向的小角色）
+    drawPlayer(player.x, player.y, player.dir);
+}
+
+function drawPlayer(x, y, dir) {
+    const cx = x * CELL + CELL / 2;
+    const cy = y * CELL + CELL / 2;
+    const size = CELL * 0.7;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(DIR_ANGLE[dir] * Math.PI / 180);
+
+    // 身体（圆形）
+    ctx.fillStyle = '#FF7043';
+    ctx.beginPath();
+    ctx.arc(0, 0, size / 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 眼睛
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(-4, -4, 3, 0, Math.PI * 2);
+    ctx.arc(4, -4, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#333';
+    ctx.beginPath();
+    ctx.arc(-4, -4, 1.5, 0, Math.PI * 2);
+    ctx.arc(4, -4, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 方向箭头（鼻子/嘴）
+    ctx.fillStyle = '#FFE082';
+    ctx.beginPath();
+    ctx.moveTo(0, -size / 2.5 - 2);
+    ctx.lineTo(-4, -size / 2.5 + 5);
+    ctx.lineTo(4, -size / 2.5 + 5);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+}
+
+// ========== 拖拽逻辑 ==========
+const programList = document.getElementById('programList');
+
+// 从积木库拖拽
+document.querySelectorAll('.block-palette .block').forEach(block => {
+    block.addEventListener('dragstart', (e) => {
+        const type = block.dataset.type;
+        let data = { type, source: 'palette' };
+        if (type === 'repeat') {
+            data.count = parseInt(block.querySelector('.repeat-count').value) || 2;
+        }
+        e.dataTransfer.setData('text/plain', JSON.stringify(data));
+        e.dataTransfer.effectAllowed = 'copy';
+    });
+});
+
+// 程序区拖拽
+programList.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    programList.classList.add('drag-over');
+});
+programList.addEventListener('dragleave', () => {
+    programList.classList.remove('drag-over');
+});
+programList.addEventListener('drop', (e) => {
+    e.preventDefault();
+    programList.classList.remove('drag-over');
+    try {
+        const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+        addBlock(data.type, data.count || 2, programList);
+    } catch(err) {}
+});
+
+// 重复块内部拖拽
+function setupRepeatDrop(bodyEl) {
+    bodyEl.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'copy';
+        bodyEl.classList.add('drag-over');
+    });
+    bodyEl.addEventListener('dragleave', () => {
+        bodyEl.classList.remove('drag-over');
+    });
+    bodyEl.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        bodyEl.classList.remove('drag-over');
+        try {
+            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+            if (data.type === 'repeat') return; // 不允许嵌套重复
+            addBlock(data.type, 0, bodyEl);
+        } catch(err) {}
+    });
+}
+
+function addBlock(type, count, container) {
+    // 移除占位符
+    const ph = container.querySelector('.placeholder');
+    if (ph) ph.remove();
+    const innerPh = container.querySelector('.inner-placeholder');
+    if (innerPh) innerPh.remove();
+
+    if (type === 'repeat') {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'repeat-container';
+        wrapper.dataset.type = 'repeat';
+        wrapper.dataset.count = count;
+
+        const header = document.createElement('div');
+        header.className = 'repeat-header';
+        header.innerHTML = `<span class="block-icon">🔄</span> 重复 <input type="number" class="repeat-count" value="${count}" min="1" max="10"> 次
+            <button class="remove-btn" onclick="removeRepeatBlock(this)">✕</button>`;
+        header.querySelector('.repeat-count').addEventListener('change', function() {
+            wrapper.dataset.count = this.value;
+        });
+
+        const body = document.createElement('div');
+        body.className = 'repeat-body';
+        body.innerHTML = '<div class="inner-placeholder">拖入积木到这里</div>';
+        setupRepeatDrop(body);
+
+        const footer = document.createElement('div');
+        footer.className = 'repeat-footer';
+
+        wrapper.appendChild(header);
+        wrapper.appendChild(body);
+        wrapper.appendChild(footer);
+        container.appendChild(wrapper);
+    } else {
+        const el = document.createElement('div');
+        el.className = `program-block block-${type}`;
+        el.dataset.type = type;
+        const labels = { forward: '⬆️ 前进一步', left: '↩️ 左转 90°', right: '↪️ 右转 90°' };
+        el.innerHTML = `${labels[type]} <button class="remove-btn" onclick="removeBlock(this)">✕</button>`;
+        container.appendChild(el);
+    }
+}
+
+function removeBlock(btn) {
+    const block = btn.parentElement;
+    const container = block.parentElement;
+    block.remove();
+    checkEmpty(container);
+}
+
+function removeRepeatBlock(btn) {
+    const wrapper = btn.closest('.repeat-container');
+    const container = wrapper.parentElement;
+    wrapper.remove();
+    checkEmpty(container);
+}
+
+function checkEmpty(container) {
+    if (container.id === 'programList' && container.children.length === 0) {
+        container.innerHTML = '<div class="placeholder"><span class="big-icon">👆</span>从左侧拖拽积木到这里<br>组合成你的程序！</div>';
+    }
+    if (container.classList.contains('repeat-body') && container.children.length === 0) {
+        container.innerHTML = '<div class="inner-placeholder">拖入积木到这里</div>';
+    }
+}
+
+function clearProgram() {
+    programList.innerHTML = '<div class="placeholder"><span class="big-icon">👆</span>从左侧拖拽积木到这里<br>组合成你的程序！</div>';
+    resetLevel();
+}
+
+// ========== 程序解析与执行 ==========
+function parseProgram() {
+    const commands = [];
+    const elements = []; // 对应的DOM元素
+    const children = programList.children;
+    for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        if (child.classList.contains('placeholder')) continue;
+
+        if (child.dataset.type === 'repeat') {
+            const count = parseInt(child.dataset.count) || 2;
+            const body = child.querySelector('.repeat-body');
+            const innerCmds = [];
+            const innerEls = [];
+            for (let j = 0; j < body.children.length; j++) {
+                const inner = body.children[j];
+                if (inner.classList.contains('inner-placeholder')) continue;
+                if (inner.dataset.type) {
+                    innerCmds.push(inner.dataset.type);
+                    innerEls.push(inner);
+                }
+            }
+            for (let r = 0; r < count; r++) {
+                // 标记重复头
+                commands.push({ type: '_repeat_start', el: child.querySelector('.repeat-header'), round: r+1, total: count });
+                elements.push(child.querySelector('.repeat-header'));
+                for (let k = 0; k < innerCmds.length; k++) {
+                    commands.push({ type: innerCmds[k], el: innerEls[k] });
+                    elements.push(innerEls[k]);
+                }
+            }
+        } else if (child.dataset.type) {
+            commands.push({ type: child.dataset.type, el: child });
+            elements.push(child);
+        }
+    }
+    return commands;
+}
+
+function clearHighlights() {
+    document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+}
+
+async function runProgram() {
+    if (isRunning) return;
+    const level = LEVELS[currentLevel];
+    player = { x: level.start.x, y: level.start.y, dir: level.start.dir };
+    drawGame();
+
+    flatCommands = parseProgram();
+    if (flatCommands.length === 0) return;
+
+    isRunning = true;
+    stepMode = false;
+    document.getElementById('btnRun').disabled = true;
+    document.getElementById('btnStep').disabled = true;
+
+    const speed = document.getElementById('speedSlider').value;
+    const delay = [600, 450, 300, 180, 80][speed - 1];
+
+    for (let i = 0; i < flatCommands.length; i++) {
+        const cmd = flatCommands[i];
+        clearHighlights();
+        if (cmd.el) cmd.el.classList.add('highlight');
+
+        if (cmd.type === '_repeat_start') {
+            document.getElementById('stepCounter').textContent = `🔄 重复第 ${cmd.round}/${cmd.total} 轮`;
+            await sleep(delay / 2);
+            continue;
+        }
+
+        const result = executeCommand(cmd.type);
+        document.getElementById('stepCounter').textContent = `执行第 ${i+1}/${flatCommands.length} 步: ${cmdLabel(cmd.type)}`;
+        drawGame();
+
+        if (!result.ok) {
+            showResult(false, result.reason);
+            isRunning = false;
+            document.getElementById('btnRun').disabled = false;
+            document.getElementById('btnStep').disabled = false;
+            return;
+        }
+
+        await sleep(delay);
+
+        // 检查是否到达终点
+        if (player.x === level.goal.x && player.y === level.goal.y) {
+            clearHighlights();
+            showResult(true);
+            isRunning = false;
+            document.getElementById('btnRun').disabled = false;
+            document.getElementById('btnStep').disabled = false;
+            return;
+        }
+    }
+
+    clearHighlights();
+    // 没有到达终点
+    if (player.x !== level.goal.x || player.y !== level.goal.y) {
+        showResult(false, '还没到达终点，再想想指令顺序吧！');
+    }
+    isRunning = false;
+    document.getElementById('btnRun').disabled = false;
+    document.getElementById('btnStep').disabled = false;
+}
+
+// 单步执行
+async function stepProgram() {
+    if (isRunning && !stepMode) return;
+
+    if (!stepMode) {
+        // 初始化单步模式
+        const level = LEVELS[currentLevel];
+        player = { x: level.start.x, y: level.start.y, dir: level.start.dir };
+        drawGame();
+        flatCommands = parseProgram();
+        if (flatCommands.length === 0) return;
+        stepIndex = 0;
+        stepMode = true;
+        isRunning = true;
+        document.getElementById('btnRun').disabled = true;
+    }
+
+    if (stepIndex >= flatCommands.length) {
+        const level = LEVELS[currentLevel];
+        if (player.x !== level.goal.x || player.y !== level.goal.y) {
+            showResult(false, '还没到达终点，再想想指令顺序吧！');
+        }
+        stepMode = false;
+        isRunning = false;
+        document.getElementById('btnRun').disabled = false;
+        clearHighlights();
+        return;
+    }
+
+    const cmd = flatCommands[stepIndex];
+    clearHighlights();
+    if (cmd.el) cmd.el.classList.add('highlight');
+
+    if (cmd.type === '_repeat_start') {
+        document.getElementById('stepCounter').textContent = `🔄 重复第 ${cmd.round}/${cmd.total} 轮`;
+        stepIndex++;
+        return;
+    }
+
+    const result = executeCommand(cmd.type);
+    document.getElementById('stepCounter').textContent = `执行第 ${stepIndex+1}/${flatCommands.length} 步: ${cmdLabel(cmd.type)}`;
+    drawGame();
+
+    if (!result.ok) {
+        showResult(false, result.reason);
+        stepMode = false;
+        isRunning = false;
+        document.getElementById('btnRun').disabled = false;
+        document.getElementById('btnStep').disabled = false;
+        return;
+    }
+
+    stepIndex++;
+
+    const level = LEVELS[currentLevel];
+    if (player.x === level.goal.x && player.y === level.goal.y) {
+        clearHighlights();
+        showResult(true);
+        stepMode = false;
+        isRunning = false;
+        document.getElementById('btnRun').disabled = false;
+    }
+}
+
+function executeCommand(type) {
+    const level = LEVELS[currentLevel];
+    if (type === 'forward') {
+        const nx = player.x + DIR_DX[player.dir];
+        const ny = player.y + DIR_DY[player.dir];
+        // 边界检查
+        if (nx < 0 || nx >= GRID || ny < 0 || ny >= GRID) {
+            return { ok: false, reason: '💥 撞到墙壁了！角色不能走出地图边界。' };
+        }
+        // 障碍物检查
+        if (level.walls.some(w => w.x === nx && w.y === ny)) {
+            return { ok: false, reason: '🪨 撞到障碍物了！试试换个方向。' };
+        }
+        player.x = nx;
+        player.y = ny;
+    } else if (type === 'left') {
+        player.dir = (player.dir + 3) % 4;
+    } else if (type === 'right') {
+        player.dir = (player.dir + 1) % 4;
+    }
+    return { ok: true };
+}
+
+function cmdLabel(type) {
+    const labels = { forward: '前进', left: '左转', right: '右转' };
+    return labels[type] || type;
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ========== 结果显示 ==========
+function showResult(success, msg) {
+    const overlay = document.getElementById('resultOverlay');
+    const title = document.getElementById('resultTitle');
+    const stars = document.getElementById('resultStars');
+    const msgEl = document.getElementById('resultMsg');
+    const blocksEl = document.getElementById('resultBlocks');
+    const btnNext = document.getElementById('btnNext');
+
+    if (success) {
+        title.textContent = '🎉 恭喜通关！';
+        const blockCount = countBlocks();
+        const level = LEVELS[currentLevel];
+        let starCount = 1;
+        if (blockCount <= level.optimal) starCount = 3;
+        else if (blockCount <= level.optimal + 3) starCount = 2;
+        stars.textContent = '⭐'.repeat(starCount) + '☆'.repeat(3 - starCount);
+        msgEl.textContent = `你做得很棒！`;
+        blocksEl.textContent = `使用了 ${blockCount} 个积木 (最优: ${level.optimal})`;
+        btnNext.style.display = currentLevel < LEVELS.length - 1 ? 'inline-block' : 'none';
+    } else {
+        title.textContent = '😅 再试试！';
+        stars.textContent = '';
+        msgEl.textContent = msg || '没有到达终点';
+        blocksEl.textContent = '';
+        btnNext.style.display = 'none';
+    }
+    overlay.classList.add('show');
+}
+
+function countBlocks() {
+    let count = 0;
+    const children = programList.children;
+    for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        if (child.classList.contains('placeholder')) continue;
+        count++; // 每个积木（含repeat）计1
+        if (child.dataset.type === 'repeat') {
+            const body = child.querySelector('.repeat-body');
+            for (let j = 0; j < body.children.length; j++) {
+                if (!body.children[j].classList.contains('inner-placeholder')) count++;
+            }
+        }
+    }
+    return count;
+}
+
+function nextLevel() {
+    if (currentLevel < LEVELS.length - 1) {
+        currentLevel++;
+        document.getElementById('levelSelect').value = currentLevel;
+        clearProgram();
+    }
+}
+
+// ========== 触摸拖拽支持（移动端） ==========
+let dragData = null;
+let dragGhost = null;
+
+document.querySelectorAll('.block-palette .block').forEach(block => {
+    block.addEventListener('touchstart', (e) => {
+        const type = block.dataset.type;
+        let data = { type, source: 'palette' };
+        if (type === 'repeat') {
+            data.count = parseInt(block.querySelector('.repeat-count').value) || 2;
+        }
+        dragData = data;
+
+        // 创建拖拽幽灵
+        dragGhost = block.cloneNode(true);
+        dragGhost.style.position = 'fixed';
+        dragGhost.style.pointerEvents = 'none';
+        dragGhost.style.opacity = '0.8';
+        dragGhost.style.zIndex = '1000';
+        dragGhost.style.width = block.offsetWidth + 'px';
+        document.body.appendChild(dragGhost);
+
+        const touch = e.touches[0];
+        dragGhost.style.left = (touch.clientX - 40) + 'px';
+        dragGhost.style.top = (touch.clientY - 20) + 'px';
+    }, { passive: true });
+});
+
+document.addEventListener('touchmove', (e) => {
+    if (!dragGhost) return;
+    const touch = e.touches[0];
+    dragGhost.style.left = (touch.clientX - 40) + 'px';
+    dragGhost.style.top = (touch.clientY - 20) + 'px';
+}, { passive: true });
+
+document.addEventListener('touchend', (e) => {
+    if (!dragGhost || !dragData) {
+        cleanupDrag();
+        return;
+    }
+    const touch = e.changedTouches[0];
+    const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+
+    if (dropTarget) {
+        // 检查是否落在 programList 或 repeat-body 内
+        const target = dropTarget.closest('#programList') || dropTarget.closest('.repeat-body');
+        if (target) {
+            if (target.classList.contains('repeat-body') && dragData.type === 'repeat') {
+                // 不允许嵌套
+            } else {
+                addBlock(dragData.type, dragData.count || 2, target);
+            }
+        }
+    }
+    cleanupDrag();
+}, { passive: true });
+
+function cleanupDrag() {
+    if (dragGhost) {
+        dragGhost.remove();
+        dragGhost = null;
+    }
+    dragData = null;
+}
+
+// ========== 初始化 ==========
+loadLevel();
+</script>
+</body>
+</html>
