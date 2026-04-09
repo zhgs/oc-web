@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📋 时间规划任务清单</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            min-height: 100vh; padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 600px; margin: 0 auto;
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px; padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        header { text-align: center; margin-bottom: 24px; }
+        header h1 { font-size: 26px; color: #0891b2; }
+        header p { color: #888; font-size: 14px; margin-top: 4px; }
+        .back-link {
+            display: inline-block; margin-bottom: 16px;
+            color: #0891b2; text-decoration: none; font-size: 14px;
+        }
+        .back-link:hover { text-decoration: underline; }
+
+        .input-box {
+            display: flex; gap: 10px; flex-wrap: wrap;
+            background: #f8fafc; padding: 16px;
+            border-radius: 12px; margin-bottom: 20px;
+        }
+        .input-box input {
+            flex: 1; min-width: 150px; padding: 12px 16px;
+            border: 2px solid #e2e8f0; border-radius: 10px;
+            font-size: 15px; outline: none; transition: border-color 0.2s;
+        }
+        .input-box input:focus { border-color: #4facfe; }
+        .input-box select {
+            padding: 12px 16px; border: 2px solid #e2e8f0;
+            border-radius: 10px; font-size: 15px; cursor: pointer;
+            background: white;
+        }
+        .input-box button {
+            padding: 12px 24px; background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white; border: none; border-radius: 10px;
+            font-size: 15px; cursor: pointer; font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .input-box button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
+        }
+
+        .stats {
+            display: flex; justify-content: space-around;
+            margin-bottom: 20px; padding: 16px;
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border-radius: 12px;
+        }
+        .stat-item { text-align: center; }
+        .stat-num { font-size: 28px; font-weight: bold; color: #d97706; }
+        .stat-label { font-size: 12px; color: #92400e; }
+
+        .task-list { list-style: none; }
+        .task-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 16px; background: white;
+            border: 2px solid #f1f5f9; border-radius: 12px;
+            margin-bottom: 10px; transition: all 0.2s;
+        }
+        .task-item:hover { border-color: #cbd5e1; }
+        .task-item.completed {
+            background: #f0fdf4; border-color: #86efac;
+        }
+        .task-item.completed .task-text {
+            text-decoration: line-through; color: #86efac;
+        }
+        .task-item.priority-high { border-left: 4px solid #ef4444; }
+        .task-item.priority-medium { border-left: 4px solid #f59e0b; }
+        .task-item.priority-low { border-left: 4px solid #22c55e; }
+
+        .checkbox {
+            width: 24px; height: 24px; border: 3px solid #cbd5e1;
+            border-radius: 50%; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; flex-shrink: 0;
+        }
+        .checkbox:hover { border-color: #4facfe; }
+        .task-item.completed .checkbox {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            border-color: #4facfe;
+        }
+        .checkbox::after {
+            content: '✓'; color: white; font-size: 14px;
+            display: none;
+        }
+        .task-item.completed .checkbox::after { display: block; }
+
+        .task-content { flex: 1; }
+        .task-text { font-size: 15px; color: #334155; }
+        .task-meta {
+            font-size: 12px; color: #94a3b8; margin-top: 2px;
+            display: flex; gap: 12px;
+        }
+        .priority-badge {
+            padding: 2px 8px; border-radius: 6px; font-size: 11px;
+            font-weight: 600;
+        }
+        .priority-badge.high { background: #fef2f2; color: #dc2626; }
+        .priority-badge.medium { background: #fffbeb; color: #d97706; }
+        .priority-badge.low { background: #f0fdf4; color: #16a34a; }
+
+        .delete-btn {
+            width: 32px; height: 32px; border: none;
+            background: #fee2e2; color: #ef4444;
+            border-radius: 8px; cursor: pointer;
+            font-size: 16px; transition: all 0.2s;
+        }
+        .delete-btn:hover { background: #fecaca; transform: scale(1.1); }
+
+        .empty-state {
+            text-align: center; padding: 40px;
+            color: #94a3b8;
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+
+        .tips {
+            margin-top: 24px; padding: 16px;
+            background: #f0f9ff; border-radius: 12px;
+            border-left: 4px solid #0ea5e9;
+        }
+        .tips h3 { font-size: 14px; color: #0369a1; margin-bottom: 8px; }
+        .tips ul { font-size: 13px; color: #075985; padding-left: 20px; }
+        .tips li { margin-bottom: 4px; }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .task-item { animation: slideIn 0.3s ease; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">← 返回导航中心</a>
+        
+        <header>
+            <h1>📋 时间规划任务清单</h1>
+            <p>训练时间管理与优先级规划能力</p>
+        </header>
+
+        <div class="input-box">
+            <input type="text" id="taskInput" placeholder="写下今天要完成的任务..." maxlength="50">
+            <select id="prioritySelect">
+                <option value="low">⭐ 低优先级</option>
+                <option value="medium" selected>⭐⭐ 中优先级</option>
+                <option value="high">⭐⭐⭐ 高优先级</option>
+            </select>
+            <button onclick="addTask()">添加任务</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-num" id="totalCount">0</div>
+                <div class="stat-label">总任务数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num" id="completedCount">0</div>
+                <div class="stat-label">已完成</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num" id="pendingCount">0</div>
+                <div class="stat-label">待完成</div>
+            </div>
+        </div>
+
+        <ul class="task-list" id="taskList">
+            <li class="empty-state">
+                <div class="icon">📝</div>
+                <p>还没有任务，添加一个开始规划吧！</p>
+            </li>
+        </ul>
+
+        <div class="tips">
+            <h3>💡 时间管理小贴士</h3>
+            <ul>
+                <li>先做重要的事情（高优先级）</li>
+                <li>完成一项就勾选一项</li>
+                <li>每天睡前检查明天要完成的任务</li>
+                <li>把大任务拆分成小任务更容易完成</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let tasks = JSON.parse(localStorage.getItem('taskList')) || [];
+
+        function saveTasks() {
+            localStorage.setItem('taskList', JSON.stringify(tasks));
+            renderTasks();
+        }
+
+        function addTask() {
+            const input = document.getElementById('taskInput');
+            const priority = document.getElementById('prioritySelect');
+            const text = input.value.trim();
+            
+            if (!text) {
+                alert('请输入任务内容！');
+                return;
+            }
+
+            tasks.unshift({
+                id: Date.now(),
+                text: text,
+                priority: priority.value,
+                completed: false,
+                createdAt: new Date().toLocaleDateString('zh-CN')
+            });
+
+            input.value = '';
+            saveTasks();
+        }
+
+        function toggleTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                saveTasks();
+            }
+        }
+
+        function deleteTask(id) {
+            if (confirm('确定要删除这个任务吗？')) {
+                tasks = tasks.filter(t => t.id !== id);
+                saveTasks();
+            }
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('taskList');
+            const totalEl = document.getElementById('totalCount');
+            const completedEl = document.getElementById('completedCount');
+            const pendingEl = document.getElementById('pendingCount');
+
+            totalEl.textContent = tasks.length;
+            completedEl.textContent = tasks.filter(t => t.completed).length;
+            pendingEl.textContent = tasks.filter(t => !t.completed).length;
+
+            if (tasks.length === 0) {
+                list.innerHTML = `
+                    <li class="empty-state">
+                        <div class="icon">📝</div>
+                        <p>还没有任务，添加一个开始规划吧！</p>
+                    </li>`;
+                return;
+            }
+
+            const priorityOrder = { high: 0, medium: 1, low: 2 };
+            const sorted = [...tasks].sort((a, b) => {
+                if (a.completed !== b.completed) return a.completed - b.completed;
+                return priorityOrder[a.priority] - priorityOrder[b.priority];
+            });
+
+            list.innerHTML = sorted.map(task => `
+                <li class="task-item ${task.completed ? 'completed' : ''} priority-${task.priority}">
+                    <div class="checkbox" onclick="toggleTask(${task.id})"></div>
+                    <div class="task-content">
+                        <div class="task-text">${escapeHtml(task.text)}</div>
+                        <div class="task-meta">
+                            <span class="priority-badge ${task.priority}">
+                                ${task.priority === 'high' ? '🔥 紧急' : task.priority === 'medium' ? '📌 重要' : '💤 一般'}
+                            </span>
+                            <span>${task.createdAt}</span>
+                        </div>
+                    </div>
+                    <button class="delete-btn" onclick="deleteTask(${task.id})" title="删除">🗑️</button>
+                </li>
+            `).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        document.getElementById('taskInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTask();
+        });
+
+        renderTasks();
+    </script>
+</body>
+</html>
