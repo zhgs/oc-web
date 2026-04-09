@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚦 交通规则判断器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #e0f7fa 0%, #fff9c4 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 700px; margin: 0 auto; }
+        header {
+            text-align: center;
+            padding: 30px 0 20px;
+        }
+        header h1 { font-size: 2em; color: #333; }
+        header p { color: #666; margin-top: 8px; font-size: 1.05em; }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 10px;
+            color: #1976d2;
+            text-decoration: none;
+            font-size: 0.95em;
+        }
+        .back-link:hover { text-decoration: underline; }
+
+        /* 统计栏 */
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 15px 0 25px;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            text-align: center;
+            background: #fff;
+            border-radius: 12px;
+            padding: 12px 22px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            min-width: 90px;
+        }
+        .stat-item .num { font-size: 1.6em; font-weight: bold; }
+        .stat-item .label { font-size: 0.85em; color: #888; margin-top: 2px; }
+        .stat-correct .num { color: #43a047; }
+        .stat-wrong .num { color: #e53935; }
+        .stat-total .num { color: #1976d2; }
+
+        /* 难度选择 */
+        .difficulty-bar {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .diff-btn {
+            padding: 8px 20px;
+            border: 2px solid #ccc;
+            border-radius: 20px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: all 0.2s;
+        }
+        .diff-btn:hover { border-color: #1976d2; color: #1976d2; }
+        .diff-btn.active { background: #1976d2; color: #fff; border-color: #1976d2; }
+
+        /* 题目卡片 */
+        .question-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 28px 24px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        .question-card.correct-flash { box-shadow: 0 0 0 4px #43a047; }
+        .question-card.wrong-flash { box-shadow: 0 0 0 4px #e53935; }
+        .q-number { font-size: 0.85em; color: #999; margin-bottom: 8px; }
+        .q-scene {
+            font-size: 1.5em;
+            text-align: center;
+            margin: 10px 0 15px;
+        }
+        .q-text { font-size: 1.15em; color: #333; line-height: 1.6; margin-bottom: 20px; }
+        .choices {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .choice-btn {
+            padding: 12px 36px;
+            border: 2px solid #ccc;
+            border-radius: 12px;
+            background: #fafafa;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: all 0.2s;
+            min-width: 120px;
+        }
+        .choice-btn:hover { border-color: #1976d2; background: #e3f2fd; }
+        .choice-btn:disabled { cursor: default; opacity: 0.85; }
+        .choice-btn.selected-correct { background: #c8e6c9; border-color: #43a047; color: #2e7d32; }
+        .choice-btn.selected-wrong { background: #ffcdd2; border-color: #e53935; color: #c62828; }
+
+        /* 解析 */
+        .explanation {
+            margin-top: 18px;
+            padding: 14px 18px;
+            border-radius: 10px;
+            font-size: 0.98em;
+            line-height: 1.6;
+            display: none;
+        }
+        .explanation.show { display: block; }
+        .explanation.correct-bg { background: #e8f5e9; color: #2e7d32; }
+        .explanation.wrong-bg { background: #fce4ec; color: #c62828; }
+
+        /* 下一题按钮 */
+        .next-btn {
+            display: none;
+            margin: 20px auto 0;
+            padding: 12px 40px;
+            background: #1976d2;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.05em;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .next-btn:hover { background: #1565c0; }
+        .next-btn.show { display: block; }
+
+        /* 完成页 */
+        .finish-card {
+            display: none;
+            text-align: center;
+            background: #fff;
+            border-radius: 16px;
+            padding: 40px 24px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+        .finish-card.show { display: block; }
+        .finish-card h2 { font-size: 1.5em; margin-bottom: 10px; }
+        .finish-card .score { font-size: 3em; font-weight: bold; color: #1976d2; margin: 15px 0; }
+        .finish-card p { color: #666; margin-bottom: 20px; }
+        .restart-btn {
+            padding: 12px 40px;
+            background: #43a047;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.05em;
+            cursor: pointer;
+        }
+        .restart-btn:hover { background: #388e3c; }
+
+        @media (max-width: 500px) {
+            header h1 { font-size: 1.5em; }
+            .q-text { font-size: 1em; }
+            .choice-btn { padding: 10px 24px; font-size: 1em; min-width: 100px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="../index.html" class="back-link">← 返回导航中心</a>
+    <header>
+        <h1>🚦 交通规则判断器</h1>
+        <p>判断交通行为是否正确，训练规则逻辑与安全常识</p>
+    </header>
+
+    <div class="difficulty-bar">
+        <button class="diff-btn active" onclick="setDifficulty('easy')">🌱 简单</button>
+        <button class="diff-btn" onclick="setDifficulty('medium')">🌿 中等</button>
+        <button class="diff-btn" onclick="setDifficulty('hard')">🌲 困难</button>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat-item stat-total"><div class="num" id="statTotal">0</div><div class="label">已答题</div></div>
+        <div class="stat-item stat-correct"><div class="num" id="statCorrect">0</div><div class="label">正确</div></div>
+        <div class="stat-item stat-wrong"><div class="num" id="statWrong">0</div><div class="label">错误</div></div>
+    </div>
+
+    <div class="question-card" id="questionCard">
+        <div class="q-number" id="qNumber"></div>
+        <div class="q-scene" id="qScene"></div>
+        <div class="q-text" id="qText"></div>
+        <div class="choices" id="choices"></div>
+        <div class="explanation" id="explanation"></div>
+    </div>
+    <button class="next-btn" id="nextBtn" onclick="nextQuestion()">下一题 ➜</button>
+
+    <div class="finish-card" id="finishCard">
+        <h2>🎉 本轮完成！</h2>
+        <div class="score" id="finalScore"></div>
+        <p id="finalMsg"></p>
+        <button class="restart-btn" onclick="restart()">再来一轮 🔄</button>
+    </div>
+</div>
+
+<script>
+// ========== 题库 ==========
+const questions = {
+easy: [
+  { scene:"🚶‍♂️🚥", text:"红灯亮了，小明直接跑过马路。这样做对吗？", answer:false, explain:"红灯停，绿灯行。红灯亮时必须等待，不能闯红灯，非常危险！" },
+  { scene:"👦🚸", text:"小华走在斑马线上过马路。这样做对吗？", answer:true, explain:"过马路要走斑马线（人行横道），这是最安全的方式。" },
+  { scene:"🚗👧", text:"小红在马路上和小伙伴追逐打闹。这样做对吗？", answer:false, explain:"马路上车辆很多，追逐打闹非常危险，容易发生交通事故。" },
+  { scene:"👦🚌", text:"公交车还没停稳，小刚就跳下车了。这样做对吗？", answer:false, explain:"必须等公交车完全停稳后再下车，否则容易摔倒受伤。" },
+  { scene:"👧🚲", text:"小丽骑自行车时戴了安全头盔。这样做对吗？", answer:true, explain:"骑自行车戴头盔可以保护头部，是正确的安全行为。" },
+  { scene:"🧒🛣️", text:"小明在人行道上行走。这样做对吗？", answer:true, explain:"行人应该走人行道，这是最基本的交通规则。" },
+  { scene:"👦🚙", text:"坐车时小刚系好了安全带。这样做对吗？", answer:true, explain:"无论前排后排，系安全带都能在紧急刹车时保护你的安全。" },
+  { scene:"👧🏃‍♀️", text:"绿灯快结束时，小红拼命跑着冲过马路。这样做对吗？", answer:false, explain:"绿灯闪烁时不应抢行，应该等下一个绿灯再安全通过。" },
+  { scene:"🧒📱", text:"小明一边看手机一边过马路。这样做对吗？", answer:false, explain:"过马路时要集中注意力观察路况，看手机会忽略来往车辆，非常危险。" },
+  { scene:"👦👀", text:"过马路前，小刚先左看、右看、再左看确认安全。这样做对吗？", answer:true, explain:"过马路前左右观察是好习惯，确认没有来车再通过更安全。" },
+],
+medium: [
+  { scene:"🚲🛣️", text:"12岁的小明独自骑自行车上了机动车道。这样做对吗？", answer:false, explain:"未满12周岁不得骑自行车上路；即使满12岁，也应走非机动车道，不能骑上机动车道。" },
+  { scene:"🚗🧒", text:"爸爸开车时，小明坐在副驾驶座上。小明今年8岁。这样做对吗？", answer:false, explain:"12岁以下儿童不宜坐副驾驶，应坐后排并使用儿童安全座椅或安全带。" },
+  { scene:"🚌🧍", text:"小华在公交站台排队等车，车来了有序上车。这样做对吗？", answer:true, explain:"在站台排队候车、有序上下车是文明安全的乘车行为。" },
+  { scene:"🌧️👦", text:"下雨天，小刚打着伞在马路边走，伞挡住了视线。这样做对吗？", answer:false, explain:"雨天打伞要注意不要遮挡视线，应抬高伞面观察路况，注意来往车辆。" },
+  { scene:"🚗🖐️", text:"小红从车窗把手伸出去玩。这样做对吗？", answer:false, explain:"乘车时不能将头、手伸出窗外，容易被其他车辆或障碍物碰伤。" },
+  { scene:"🚶‍♂️🚧", text:"前方道路施工有围栏，小明绕道走了另一条路。这样做对吗？", answer:true, explain:"遇到施工围栏应绕行，不要翻越围栏进入施工区域。" },
+  { scene:"🚗🔊", text:"救护车鸣笛驶来，路上的车辆纷纷靠边让行。这样做对吗？", answer:true, explain:"听到救护车、消防车等特种车辆的警报声，所有车辆和行人都应主动避让。" },
+  { scene:"🌙👧", text:"天黑了，小丽穿着深色衣服在路边走，没有反光标志。这样做对吗？", answer:false, explain:"夜间出行应穿浅色或带反光条的衣物，让司机更容易看到你。" },
+  { scene:"🛵👦", text:"小刚坐在摩托车后座，没有戴头盔。这样做对吗？", answer:false, explain:"乘坐摩托车无论前后座都必须佩戴安全头盔，这是法律规定也是安全保障。" },
+  { scene:"🚶‍♀️🚶", text:"小华和同学并排走在非机动车道上。这样做对吗？", answer:false, explain:"行人应走人行道，不应占用非机动车道，更不要并排行走阻碍交通。" },
+],
+hard: [
+  { scene:"🚗🔄", text:"在没有交通信号灯的路口，行人和直行车辆同时到达，行人有优先通行权。对吗？", answer:true, explain:"根据交通法规，机动车经过没有信号灯的路口时，应减速让行人先通过。行人享有优先通行权。" },
+  { scene:"🚲🚸", text:"骑自行车经过斑马线时，应该下车推行。对吗？", answer:true, explain:"骑自行车过斑马线应下车推行，骑车通过斑马线既不安全也不符合规定。" },
+  { scene:"🚌🚪", text:"公交车行驶中，紧急情况下可以打开车门跳车逃生。对吗？", answer:false, explain:"行驶中跳车极其危险。紧急情况应使用车上的安全锤砸窗逃生，或等车停稳后有序撤离。" },
+  { scene:"🚗🔀", text:"在高速公路上，车辆可以在应急车道上正常行驶以避开拥堵。对吗？", answer:false, explain:"应急车道是供紧急救援使用的，非紧急情况占用应急车道违法，还会妨碍救援。" },
+  { scene:"⚠️🚶", text:"黄灯闪烁时，行人可以继续通过路口。对吗？", answer:false, explain:"黄灯闪烁是警示信号，已在路口内的可继续通过，未进入路口的应停止等待。" },
+  { scene:"🚗🅿️", text:"临时停车时，只要打开双闪灯就可以停在任何地方。对吗？", answer:false, explain:"即使开双闪，也不能在禁停区域停车。临时停车要选择允许停车的位置，且不能妨碍交通。" },
+  { scene:"🚲🌃", text:"夜间骑自行车可以不开车灯，因为有路灯照明。对吗？", answer:false, explain:"夜间骑车必须开启车灯，车灯不仅帮你看路，更重要的是让其他车辆和行人看到你。" },
+  { scene:"🚗☔", text:"雨天路滑，驾驶员应该加大跟车距离。对吗？", answer:true, explain:"雨天路面湿滑，制动距离变长，应适当加大跟车距离，降低车速，确保安全。" },
+  { scene:"👷🚧", text:"交警的手势指挥与信号灯不一致时，应该听从信号灯。对吗？", answer:false, explain:"当交警现场指挥与信号灯不一致时，应服从交警的手势指挥，交警指挥优先级最高。" },
+  { scene:"🚗🔃", text:"环形路口（转盘）内的车辆有优先通行权，准备进入的车辆应让行。对吗？", answer:true, explain:"环形路口遵循"让已在环内车辆先行"的原则，准备驶入的车辆应减速让行。" },
+]
+};
+
+// ========== 状态 ==========
+let difficulty = 'easy';
+let pool = [];
+let current = 0;
+let correct = 0;
+let wrong = 0;
+let answered = false;
+
+function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+function setDifficulty(d) {
+    difficulty = d;
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    restart();
+}
+
+function restart() {
+    pool = shuffle([...questions[difficulty]]);
+    current = 0; correct = 0; wrong = 0; answered = false;
+    updateStats();
+    document.getElementById('finishCard').classList.remove('show');
+    document.getElementById('questionCard').style.display = '';
+    document.getElementById('nextBtn').classList.remove('show');
+    renderQuestion();
+}
+
+function updateStats() {
+    document.getElementById('statTotal').textContent = correct + wrong;
+    document.getElementById('statCorrect').textContent = correct;
+    document.getElementById('statWrong').textContent = wrong;
+}
+
+function renderQuestion() {
+    if (current >= pool.length) { showFinish(); return; }
+    answered = false;
+    const q = pool[current];
+    document.getElementById('qNumber').textContent = `第 ${current + 1} / ${pool.length} 题`;
+    document.getElementById('qScene').textContent = q.scene;
+    document.getElementById('qText').textContent = q.text;
+    const choicesEl = document.getElementById('choices');
+    choicesEl.innerHTML = `
+        <button class="choice-btn" onclick="answer(true)">✅ 正确</button>
+        <button class="choice-btn" onclick="answer(false)">❌ 错误</button>
+    `;
+    const exp = document.getElementById('explanation');
+    exp.classList.remove('show','correct-bg','wrong-bg');
+    exp.textContent = '';
+    document.getElementById('nextBtn').classList.remove('show');
+    document.getElementById('questionCard').className = 'question-card';
+}
+
+function answer(userAnswer) {
+    if (answered) return;
+    answered = true;
+    const q = pool[current];
+    const isCorrect = userAnswer === q.answer;
+    const btns = document.querySelectorAll('.choice-btn');
+    btns.forEach(b => {
+        b.disabled = true;
+        // 高亮用户选择
+        if (b.textContent.includes('正确') && userAnswer === true) {
+            b.classList.add(isCorrect ? 'selected-correct' : 'selected-wrong');
+        }
+        if (b.textContent.includes('错误') && userAnswer === false) {
+            b.classList.add(isCorrect ? 'selected-correct' : 'selected-wrong');
+        }
+        // 显示正确答案
+        if (q.answer === true && b.textContent.includes('正确') && !isCorrect) {
+            b.classList.add('selected-correct');
+        }
+        if (q.answer === false && b.textContent.includes('错误') && !isCorrect) {
+            b.classList.add('selected-correct');
+        }
+    });
+
+    const card = document.getElementById('questionCard');
+    card.classList.add(isCorrect ? 'correct-flash' : 'wrong-flash');
+
+    if (isCorrect) correct++; else wrong++;
+    updateStats();
+
+    const exp = document.getElementById('explanation');
+    exp.textContent = (isCorrect ? '✅ 回答正确！' : '❌ 回答错误！') + ' ' + q.explain;
+    exp.classList.add('show', isCorrect ? 'correct-bg' : 'wrong-bg');
+
+    document.getElementById('nextBtn').classList.add('show');
+}
+
+function nextQuestion() {
+    current++;
+    renderQuestion();
+}
+
+function showFinish() {
+    document.getElementById('questionCard').style.display = 'none';
+    document.getElementById('nextBtn').classList.remove('show');
+    const pct = Math.round(correct / pool.length * 100);
+    document.getElementById('finalScore').textContent = pct + '分';
+    let msg = '';
+    if (pct === 100) msg = '🏆 满分！你是交通安全小达人！';
+    else if (pct >= 80) msg = '👏 很棒！再接再厉！';
+    else if (pct >= 60) msg = '💪 还不错，继续加油！';
+    else msg = '📖 多学习交通规则，安全最重要哦！';
+    document.getElementById('finalMsg').textContent = `答对 ${correct} 题，答错 ${wrong} 题。${msg}`;
+    document.getElementById('finishCard').classList.add('show');
+}
+
+// 初始化
+restart();
+</script>
+</body>
+</html>
