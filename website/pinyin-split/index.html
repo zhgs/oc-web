@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拼音音节拆分组合</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 24px;
+        }
+        header h1 { font-size: 2em; margin-bottom: 6px; }
+        header p { opacity: 0.85; font-size: 1em; }
+        .back-link {
+            display: inline-block;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            margin-bottom: 12px;
+            font-size: 0.95em;
+        }
+        .back-link:hover { color: white; }
+
+        /* 模式选择 */
+        .mode-bar {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .mode-btn {
+            padding: 10px 22px;
+            border: 2px solid rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+        .mode-btn:hover { background: rgba(255,255,255,0.3); }
+        .mode-btn.active {
+            background: white;
+            color: #764ba2;
+            border-color: white;
+            font-weight: bold;
+        }
+
+        /* 主面板 */
+        .panel {
+            background: white;
+            border-radius: 20px;
+            padding: 28px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            margin-bottom: 20px;
+        }
+        .panel h2 {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        /* 题目区 */
+        .question-area {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .hanzi-display {
+            font-size: 4em;
+            color: #333;
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+        .pinyin-hint {
+            font-size: 1.4em;
+            color: #999;
+            letter-spacing: 2px;
+        }
+        .pinyin-display {
+            font-size: 2em;
+            color: #764ba2;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        /* 组合展示区 */
+        .combo-display {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .combo-slot {
+            min-width: 60px;
+            height: 50px;
+            line-height: 50px;
+            text-align: center;
+            border-radius: 12px;
+            font-size: 1.3em;
+            font-weight: bold;
+            padding: 0 12px;
+        }
+        .slot-shengmu {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 2px solid #a5d6a7;
+        }
+        .slot-yunmu {
+            background: #e3f2fd;
+            color: #1565c0;
+            border: 2px solid #90caf9;
+        }
+        .slot-shengdiao {
+            background: #fff3e0;
+            color: #e65100;
+            border: 2px solid #ffcc80;
+        }
+        .slot-plus {
+            font-size: 1.5em;
+            color: #999;
+            min-width: auto;
+            border: none;
+            background: none;
+            height: auto;
+            line-height: normal;
+        }
+        .slot-equals {
+            font-size: 1.5em;
+            color: #764ba2;
+            min-width: auto;
+            border: none;
+            background: none;
+            height: auto;
+            line-height: normal;
+        }
+        .slot-result {
+            background: #f3e5f5;
+            color: #764ba2;
+            border: 2px solid #ce93d8;
+            min-width: 80px;
+            font-size: 1.5em;
+        }
+
+        /* 选项按钮 */
+        .options-section {
+            margin-bottom: 18px;
+        }
+        .options-label {
+            font-size: 0.95em;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .options-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        .opt-btn {
+            padding: 8px 16px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: #fafafa;
+            cursor: pointer;
+            font-size: 1.05em;
+            transition: all 0.2s;
+            min-width: 50px;
+            text-align: center;
+        }
+        .opt-btn:hover { border-color: #764ba2; background: #f3e5f5; }
+        .opt-btn.selected {
+            border-color: #764ba2;
+            background: #764ba2;
+            color: white;
+        }
+        .opt-btn.correct {
+            border-color: #4caf50;
+            background: #4caf50;
+            color: white;
+            animation: pop 0.3s ease;
+        }
+        .opt-btn.wrong {
+            border-color: #f44336;
+            background: #f44336;
+            color: white;
+            animation: shake 0.4s ease;
+        }
+        .opt-btn.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+
+        /* 提交按钮 */
+        .submit-btn {
+            display: block;
+            margin: 20px auto 0;
+            padding: 12px 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(118,75,162,0.4); }
+        .submit-btn:disabled { opacity: 0.5; cursor: default; transform: none; box-shadow: none; }
+
+        /* 反馈 */
+        .feedback {
+            text-align: center;
+            font-size: 1.2em;
+            margin-top: 16px;
+            min-height: 36px;
+            font-weight: bold;
+        }
+        .feedback.correct { color: #4caf50; }
+        .feedback.wrong { color: #f44336; }
+
+        /* 计分 */
+        .score-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.15);
+            border-radius: 12px;
+            padding: 10px 20px;
+            color: white;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .score-item { font-size: 1em; }
+        .score-item span { font-weight: bold; font-size: 1.2em; }
+        .streak { color: #ffd54f; }
+
+        /* 拼音表 */
+        .table-section {
+            margin-top: 12px;
+        }
+        .table-section h3 {
+            color: #555;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+        .pinyin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95em;
+        }
+        .pinyin-table th {
+            background: #f5f5f5;
+            padding: 8px;
+            text-align: center;
+            font-weight: bold;
+            color: #555;
+            border: 1px solid #e0e0e0;
+        }
+        .pinyin-table td {
+            padding: 6px 10px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+            cursor: default;
+        }
+        .pinyin-table tr:hover td { background: #f9f0ff; }
+        .td-shengmu { color: #2e7d32; font-weight: bold; }
+        .td-yunmu { color: #1565c0; font-weight: bold; }
+
+        /* 难度 */
+        .diff-bar {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+        .diff-btn {
+            padding: 6px 16px;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            background: #f5f5f5;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+        .diff-btn:hover { border-color: #764ba2; }
+        .diff-btn.active {
+            background: #764ba2;
+            color: white;
+            border-color: #764ba2;
+        }
+
+        /* 拆分模式的输入区 */
+        .split-input {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            align-items: flex-end;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .input-group label {
+            font-size: 0.85em;
+            color: #888;
+        }
+        .split-select {
+            padding: 10px 14px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1.1em;
+            min-width: 80px;
+            text-align: center;
+            appearance: none;
+            -webkit-appearance: none;
+            background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6'%3E%3Cpath d='M0 0l6 6 6-6z' fill='%23999'/%3E%3C/svg%3E") no-repeat right 10px center;
+            padding-right: 30px;
+            cursor: pointer;
+        }
+        .split-select:focus {
+            outline: none;
+            border-color: #764ba2;
+        }
+
+        /* 隐藏 */
+        .hidden { display: none !important; }
+
+        /* 响应式 */
+        @media (max-width: 600px) {
+            .hanzi-display { font-size: 3em; }
+            .panel { padding: 18px; }
+            .combo-slot { min-width: 45px; height: 40px; line-height: 40px; font-size: 1.1em; padding: 0 8px; }
+            .opt-btn { padding: 6px 12px; font-size: 0.95em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">← 返回导航中心</a>
+        <header>
+            <h1>🔤 拼音音节拆分组合</h1>
+            <p>声母 + 韵母 + 声调 = 正确拼音</p>
+        </header>
+
+        <!-- 计分 -->
+        <div class="score-bar">
+            <div class="score-item">✅ 正确: <span id="correctCount">0</span></div>
+            <div class="score-item">❌ 错误: <span id="wrongCount">0</span></div>
+            <div class="score-item streak">🔥 连对: <span id="streakCount">0</span></div>
+            <div class="score-item">📊 正确率: <span id="accuracy">0%</span></div>
+        </div>
+
+        <!-- 模式选择 -->
+        <div class="mode-bar">
+            <button class="mode-btn active" data-mode="combine" onclick="switchMode('combine')">🧩 组合模式</button>
+            <button class="mode-btn" data-mode="split" onclick="switchMode('split')">✂️ 拆分模式</button>
+            <button class="mode-btn" data-mode="tone" onclick="switchMode('tone')">🎵 声调模式</button>
+            <button class="mode-btn" data-mode="table" onclick="switchMode('table')">📋 拼音表</button>
+        </div>
+
+        <!-- 难度 -->
+        <div class="diff-bar" id="diffBar">
+            <button class="diff-btn active" data-diff="easy" onclick="setDifficulty('easy')">⭐ 简单</button>
+            <button class="diff-btn" data-diff="medium" onclick="setDifficulty('medium')">⭐⭐ 中等</button>
+            <button class="diff-btn" data-diff="hard" onclick="setDifficulty('hard')">⭐⭐⭐ 困难</button>
+        </div>
+
+        <!-- 组合模式 -->
+        <div class="panel" id="combinePanel">
+            <h2>选择声母、韵母、声调，组合出正确拼音</h2>
+            <div class="question-area">
+                <div class="hanzi-display" id="combineHanzi">汉</div>
+                <div class="pinyin-hint" id="combineHint"></div>
+            </div>
+            <div class="combo-display" id="comboDisplay">
+                <div class="combo-slot slot-shengmu" id="slotSM">?</div>
+                <div class="combo-slot slot-plus">+</div>
+                <div class="combo-slot slot-yunmu" id="slotYM">?</div>
+                <div class="combo-slot slot-plus">+</div>
+                <div class="combo-slot slot-shengdiao" id="slotSD">?</div>
+                <div class="combo-slot slot-equals">=</div>
+                <div class="combo-slot slot-result" id="slotResult">?</div>
+            </div>
+            <div class="options-section">
+                <div class="options-label">🟢 声母</div>
+                <div class="options-grid" id="smOptions"></div>
+            </div>
+            <div class="options-section">
+                <div class="options-label">🔵 韵母</div>
+                <div class="options-grid" id="ymOptions"></div>
+            </div>
+            <div class="options-section">
+                <div class="options-label">🟠 声调</div>
+                <div class="options-grid" id="sdOptions"></div>
+            </div>
+            <button class="submit-btn" id="combineSubmit" onclick="checkCombine()" disabled>确认提交</button>
+            <div class="feedback" id="combineFeedback"></div>
+        </div>
+
+        <!-- 拆分模式 -->
+        <div class="panel hidden" id="splitPanel">
+            <h2>看拼音，拆分出声母、韵母和声调</h2>
+            <div class="question-area">
+                <div class="hanzi-display" id="splitHanzi">字</div>
+                <div class="pinyin-display" id="splitPinyin">zì</div>
+            </div>
+            <div class="split-input">
+                <div class="input-group">
+                    <label>声母</label>
+                    <select class="split-select" id="splitSM"><option value="">--</option></select>
+                </div>
+                <div class="input-group">
+                    <label>韵母</label>
+                    <select class="split-select" id="splitYM"><option value="">--</option></select>
+                </div>
+                <div class="input-group">
+                    <label>声调</label>
+                    <select class="split-select" id="splitSD"><option value="">--</option></select>
+                </div>
+            </div>
+            <button class="submit-btn" id="splitSubmit" onclick="checkSplit()">确认提交</button>
+            <div class="feedback" id="splitFeedback"></div>
+        </div>
+
+        <!-- 声调模式 -->
+        <div class="panel hidden" id="tonePanel">
+            <h2>给拼音标上正确的声调</h2>
+            <div class="question-area">
+                <div class="hanzi-display" id="toneHanzi">天</div>
+                <div class="pinyin-hint" id="toneBase">tian</div>
+            </div>
+            <div class="options-section">
+                <div class="options-label">选择正确的声调拼音</div>
+                <div class="options-grid" id="toneOptions"></div>
+            </div>
+            <div class="feedback" id="toneFeedback"></div>
+        </div>
+
+        <!-- 拼音表 -->
+        <div class="panel hidden" id="tablePanel">
+            <h2>📋 汉语拼音音节表</h2>
+            <div class="table-section">
+                <h3>🟢 声母 (23个)</h3>
+                <div class="options-grid" style="margin-bottom:16px;" id="smTable"></div>
+            </div>
+            <div class="table-section">
+                <h3>🔵 韵母 (24个)</h3>
+                <div class="options-grid" style="margin-bottom:16px;" id="ymTable"></div>
+            </div>
+            <div class="table-section">
+                <h3>🟠 四声 + 轻声</h3>
+                <div class="options-grid" id="sdTable"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ========== 拼音数据库 ==========
+const SHENGMU = ['b','p','m','f','d','t','n','l','g','k','h','j','q','x','zh','ch','sh','r','z','c','s','y','w'];
+const YUNMU = ['a','o','e','i','u','ü','ai','ei','ao','ou','an','en','ang','eng','ong','ia','ie','iu','ian','in','iang','ing','iong','ua','uo','uai','ui','uan','un','uang','üe','üan','ün','er'];
+const TONES = ['第一声 (ˉ)','第二声 (ˊ)','第三声 (ˇ)','第四声 (ˋ)','轻声'];
+const TONE_NUMS = [1,2,3,4,0];
+
+// 声调映射
+const TONE_MAP = {
+    'a': ['ā','á','ǎ','à','a'],
+    'o': ['ō','ó','ǒ','ò','o'],
+    'e': ['ē','é','ě','è','e'],
+    'i': ['ī','í','ǐ','ì','i'],
+    'u': ['ū','ú','ǔ','ù','u'],
+    'ü': ['ǖ','ǘ','ǚ','ǜ','ü']
+};
+
+// 题库 - [汉字, 声母, 韵母, 声调(1-4,0=轻声)]
+const WORDS_EASY = [
+    ['妈','m','a',1],['大','d','a',4],['他','t','a',1],['八','b','a',1],
+    ['不','b','u',4],['目','m','u',4],['土','t','u',3],['读','d','u',2],
+    ['米','m','i',3],['地','d','i',4],['体','t','i',3],['笔','b','i',3],
+    ['我','w','o',3],['哥','g','e',1],['和','h','e',2],['课','k','e',4],
+    ['发','f','a',1],['拉','l','a',1],['那','n','a',4],['花','h','ua',1],
+    ['你','n','i',3],['去','q','ü',4],['鱼','y','ü',2],['女','n','ü',3],
+    ['一','y','i',1],['五','w','u',3],['四','s','i',4],['七','q','i',1],
+    ['二','','er',4],['三','s','an',1],['六','l','iu',4],['九','j','iu',3],
+    ['十','sh','i',2],['天','t','ian',1],['人','r','en',2],['水','sh','ui',3],
+    ['火','h','uo',3],['山','sh','an',1],['上','sh','ang',4],['下','x','ia',4],
+    ['口','k','ou',3],['手','sh','ou',3],['日','r','i',4],['月','y','üe',4],
+];
+
+const WORDS_MEDIUM = [
+    ['春','ch','un',1],['风','f','eng',1],['雨','y','ü',3],['雪','x','üe',3],
+    ['光','g','uang',1],['明','m','ing',2],['朋','p','eng',2],['友','y','ou',3],
+    ['学','x','üe',2],['校','x','iao',4],['老','l','ao',3],['师','sh','i',1],
+    ['书','sh','u',1],['本','b','en',3],['笑','x','iao',4],['哭','k','u',1],
+    ['飞','f','ei',1],['跑','p','ao',3],['跳','t','iao',4],['走','z','ou',3],
+    ['吃','ch','i',1],['喝','h','e',1],['说','sh','uo',1],['看','k','an',4],
+    ['听','t','ing',1],['想','x','iang',3],['爱','','ai',4],['快','k','uai',4],
+    ['慢','m','an',4],['高','g','ao',1],['低','d','i',1],['长','ch','ang',2],
+    ['短','d','uan',3],['多','d','uo',1],['少','sh','ao',3],['新','x','in',1],
+    ['旧','j','iu',4],['前','q','ian',2],['后','h','ou',4],['左','z','uo',3],
+    ['右','y','ou',4],['东','d','ong',1],['西','x','i',1],['南','n','an',2],
+    ['北','b','ei',3],['中','zh','ong',1],['白','b','ai',2],['黑','h','ei',1],
+    ['红','h','ong',2],['绿','l','ü',4],['蓝','l','an',2],['黄','h','uang',2],
+];
+
+const WORDS_HARD = [
+    ['装','zh','uang',1],['创','ch','uang',4],['双','sh','uang',1],['庄','zh','uang',1],
+    ['窗','ch','uang',1],['状','zh','uang',4],['撞','zh','uang',4],['床','ch','uang',2],
+    ['穷','q','iong',2],['兄','x','iong',1],['胸','x','iong',1],['雄','x','iong',2],
+    ['酿','n','iang',4],['娘','n','iang',2],['量','l','iang',4],['强','q','iang',2],
+    ['卷','j','üan',3],['全','q','üan',2],['圆','y','üan',2],['远','y','üan',3],
+    ['军','j','ün',1],['群','q','ün',2],['云','y','ün',2],['运','y','ün',4],
+    ['准','zh','un',3],['春','ch','un',1],['顺','sh','un',4],['润','r','un',4],
+    ['转','zh','uan',3],['船','ch','uan',2],['算','s','uan',4],['管','g','uan',3],
+    ['怀','h','uai',2],['坏','h','uai',4],['块','k','uai',4],['帅','sh','uai',4],
+    ['追','zh','ui',1],['嘴','z','ui',3],['最','z','ui',4],['醉','z','ui',4],
+    ['证','zh','eng',4],['正','zh','eng',4],['整','zh','eng',3],['蒸','zh','eng',1],
+    ['张','zh','ang',1],['长','ch','ang',2],['唱','ch','ang',4],['商','sh','ang',1],
+];
+
+// ========== 状态 ==========
+let currentMode = 'combine';
+let difficulty = 'easy';
+let correct = 0, wrong = 0, streak = 0;
+let currentWord = null;
+let selectedSM = null, selectedYM = null, selectedSD = null;
+let answered = false;
+
+// ========== 工具函数 ==========
+function getWordPool() {
+    if (difficulty === 'easy') return WORDS_EASY;
+    if (difficulty === 'medium') return [...WORDS_EASY, ...WORDS_MEDIUM];
+    return [...WORDS_EASY, ...WORDS_MEDIUM, ...WORDS_HARD];
+}
+
+function randomPick(arr, n) {
+    const shuffled = [...arr].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, n);
+}
+
+function addTone(yunmu, toneNum) {
+    if (toneNum === 0) return yunmu;
+    // 声调标注规则: a,o,e上直接标; iu并列标后面
+    const toneIdx = toneNum - 1;
+    const vowels = 'aoeiuü';
+    let target = '';
+    if (yunmu.includes('a')) target = 'a';
+    else if (yunmu.includes('o')) target = 'o';
+    else if (yunmu.includes('e')) target = 'e';
+    else if (yunmu.includes('iu')) target = 'u';
+    else if (yunmu.includes('ui')) target = 'i';
+    else {
+        for (const v of vowels) {
+            if (yunmu.includes(v)) { target = v; break; }
+        }
+    }
+    if (!target || !TONE_MAP[target]) return yunmu;
+    return yunmu.replace(target, TONE_MAP[target][toneIdx]);
+}
+
+function buildFullPinyin(sm, ym, tone) {
+    return sm + addTone(ym, tone);
+}
+
+function updateScore() {
+    document.getElementById('correctCount').textContent = correct;
+    document.getElementById('wrongCount').textContent = wrong;
+    document.getElementById('streakCount').textContent = streak;
+    const total = correct + wrong;
+    document.getElementById('accuracy').textContent = total > 0 ? Math.round(correct/total*100)+'%' : '0%';
+}
+
+// ========== 模式切换 ==========
+function switchMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+    document.getElementById('combinePanel').classList.toggle('hidden', mode !== 'combine');
+    document.getElementById('splitPanel').classList.toggle('hidden', mode !== 'split');
+    document.getElementById('tonePanel').classList.toggle('hidden', mode !== 'tone');
+    document.getElementById('tablePanel').classList.toggle('hidden', mode !== 'table');
+    document.getElementById('diffBar').classList.toggle('hidden', mode === 'table');
+    if (mode === 'table') renderTable();
+    else newQuestion();
+}
+
+function setDifficulty(diff) {
+    difficulty = diff;
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.toggle('active', b.dataset.diff === diff));
+    newQuestion();
+}
+
+// ========== 组合模式 ==========
+function newCombineQuestion() {
+    answered = false;
+    selectedSM = null; selectedYM = null; selectedSD = null;
+    const pool = getWordPool();
+    currentWord = pool[Math.floor(Math.random() * pool.length)];
+    const [hanzi, sm, ym, tone] = currentWord;
+
+    document.getElementById('combineHanzi').textContent = hanzi;
+    document.getElementById('combineHint').textContent = '';
+    document.getElementById('slotSM').textContent = '?';
+    document.getElementById('slotYM').textContent = '?';
+    document.getElementById('slotSD').textContent = '?';
+    document.getElementById('slotResult').textContent = '?';
+    document.getElementById('combineFeedback').textContent = '';
+    document.getElementById('combineFeedback').className = 'feedback';
+    document.getElementById('combineSubmit').disabled = true;
+
+    // 生成声母选项 (正确 + 干扰)
+    let smChoices = [sm];
+    const otherSM = SHENGMU.filter(s => s !== sm);
+    smChoices.push(...randomPick(otherSM, difficulty === 'easy' ? 3 : difficulty === 'medium' ? 4 : 5));
+    if (sm === '' && !smChoices.includes('')) smChoices[0] = '';
+    smChoices.sort(() => Math.random() - 0.5);
+    if (!smChoices.includes('')) smChoices.push(''); // 整体认读/零声母选项
+    renderOptions('smOptions', smChoices, 'sm', s => s === '' ? '(无)' : s);
+
+    // 生成韵母选项
+    let ymChoices = [ym];
+    const otherYM = YUNMU.filter(y => y !== ym);
+    ymChoices.push(...randomPick(otherYM, difficulty === 'easy' ? 3 : difficulty === 'medium' ? 5 : 7));
+    ymChoices.sort(() => Math.random() - 0.5);
+    renderOptions('ymOptions', ymChoices, 'ym');
+
+    // 声调选项
+    renderOptions('sdOptions', TONE_NUMS, 'sd', t => {
+        if (t === 0) return '轻声';
+        return ['一声 ˉ','二声 ˊ','三声 ˇ','四声 ˋ'][t-1];
+    });
+}
+
+function renderOptions(containerId, choices, type, labelFn) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    choices.forEach(val => {
+        const btn = document.createElement('button');
+        btn.className = 'opt-btn';
+        btn.textContent = labelFn ? labelFn(val) : val;
+        btn.dataset.value = val;
+        btn.onclick = () => selectOption(type, val, btn);
+        container.appendChild(btn);
+    });
+}
+
+function selectOption(type, val, btn) {
+    if (answered) return;
+    const containerId = type === 'sm' ? 'smOptions' : type === 'ym' ? 'ymOptions' : 'sdOptions';
+    document.querySelectorAll(`#${containerId} .opt-btn`).forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+
+    if (type === 'sm') { selectedSM = val; document.getElementById('slotSM').textContent = val === '' ? '∅' : val; }
+    if (type === 'ym') { selectedYM = val; document.getElementById('slotYM').textContent = val; }
+    if (type === 'sd') {
+        selectedSD = val;
+        const labels = {0:'轻声',1:'一声',2:'二声',3:'三声',4:'四声'};
+        document.getElementById('slotSD').textContent = labels[val];
+    }
+
+    // 实时预览
+    if (selectedSM !== null && selectedYM !== null && selectedSD !== null) {
+        document.getElementById('slotResult').textContent = buildFullPinyin(
+            selectedSM === '' ? '' : selectedSM, selectedYM, Number(selectedSD)
+        );
+        document.getElementById('combineSubmit').disabled = false;
+    }
+}
+
+function checkCombine() {
+    if (answered) { newQuestion(); return; }
+    answered = true;
+    const [hanzi, sm, ym, tone] = currentWord;
+    const isCorrect = selectedSM === sm && selectedYM === ym && Number(selectedSD) === tone;
+    const fb = document.getElementById('combineFeedback');
+    const fullPinyin = buildFullPinyin(sm, ym, tone);
+
+    if (isCorrect) {
+        correct++; streak++;
+        fb.textContent = `✅ 正确！${hanzi} = ${fullPinyin}`;
+        fb.className = 'feedback correct';
+    } else {
+        wrong++; streak = 0;
+        fb.textContent = `❌ 正确答案：声母「${sm||'无'}」+ 韵母「${ym}」+ ${['轻声','一声','二声','三声','四声'][tone]} = ${fullPinyin}`;
+        fb.className = 'feedback wrong';
+    }
+    updateScore();
+    document.getElementById('combineSubmit').textContent = '下一题 →';
+    // 高亮正确选项
+    highlightCorrect('smOptions', sm);
+    highlightCorrect('ymOptions', ym);
+    highlightCorrect('sdOptions', String(tone));
+}
+
+function highlightCorrect(containerId, correctVal) {
+    document.querySelectorAll(`#${containerId} .opt-btn`).forEach(b => {
+        if (b.dataset.value === String(correctVal)) b.classList.add('correct');
+        else if (b.classList.contains('selected') && b.dataset.value !== String(correctVal)) b.classList.add('wrong');
+        b.classList.add('disabled');
+    });
+}
+
+// ========== 拆分模式 ==========
+function newSplitQuestion() {
+    answered = false;
+    const pool = getWordPool();
+    currentWord = pool[Math.floor(Math.random() * pool.length)];
+    const [hanzi, sm, ym, tone] = currentWord;
+    const fullPinyin = buildFullPinyin(sm, ym, tone);
+
+    document.getElementById('splitHanzi').textContent = hanzi;
+    document.getElementById('splitPinyin').textContent = fullPinyin;
+    document.getElementById('splitFeedback').textContent = '';
+    document.getElementById('splitFeedback').className = 'feedback';
+
+    // 填充下拉
+    const smSel = document.getElementById('splitSM');
+    smSel.innerHTML = '<option value="">--</option><option value="(none)">(无)</option>';
+    SHENGMU.forEach(s => { smSel.innerHTML += `<option value="${s}">${s}</option>`; });
+
+    const ymSel = document.getElementById('splitYM');
+    ymSel.innerHTML = '<option value="">--</option>';
+    YUNMU.forEach(y => { ymSel.innerHTML += `<option value="${y}">${y}</option>`; });
+
+    const sdSel = document.getElementById('splitSD');
+    sdSel.innerHTML = '<option value="">--</option>';
+    TONE_NUMS.forEach(t => {
+        const label = t === 0 ? '轻声' : ['一声','二声','三声','四声'][t-1];
+        sdSel.innerHTML += `<option value="${t}">${label}</option>`;
+    });
+}
+
+function checkSplit() {
+    if (answered) { newQuestion(); return; }
+    const [hanzi, sm, ym, tone] = currentWord;
+    let userSM = document.getElementById('splitSM').value;
+    if (userSM === '(none)') userSM = '';
+    const userYM = document.getElementById('splitYM').value;
+    const userSD = document.getElementById('splitSD').value;
+
+    if (userYM === '' || userSD === '') {
+        document.getElementById('splitFeedback').textContent = '⚠️ 请选择所有选项';
+        document.getElementById('splitFeedback').className = 'feedback wrong';
+        return;
+    }
+
+    answered = true;
+    const isCorrect = userSM === sm && userYM === ym && Number(userSD) === tone;
+    const fb = document.getElementById('splitFeedback');
+
+    if (isCorrect) {
+        correct++; streak++;
+        fb.textContent = `✅ 正确！声母「${sm||'无'}」+ 韵母「${ym}」+ ${['轻声','一声','二声','三声','四声'][tone]}`;
+        fb.className = 'feedback correct';
+    } else {
+        wrong++; streak = 0;
+        fb.textContent = `❌ 正确：声母「${sm||'无'}」+ 韵母「${ym}」+ ${['轻声','一声','二声','三声','四声'][tone]}`;
+        fb.className = 'feedback wrong';
+    }
+    updateScore();
+    document.getElementById('splitSubmit').textContent = '下一题 →';
+}
+
+// ========== 声调模式 ==========
+function newToneQuestion() {
+    answered = false;
+    const pool = getWordPool();
+    currentWord = pool[Math.floor(Math.random() * pool.length)];
+    const [hanzi, sm, ym, tone] = currentWord;
+    const base = sm + ym;
+
+    document.getElementById('toneHanzi').textContent = hanzi;
+    document.getElementById('toneBase').textContent = base;
+    document.getElementById('toneFeedback').textContent = '';
+    document.getElementById('toneFeedback').className = 'feedback';
+
+    // 生成4个声调+轻声选项
+    const options = [];
+    for (let t = 1; t <= 4; t++) {
+        options.push({ label: buildFullPinyin(sm, ym, t), tone: t });
+    }
+    if (tone === 0) options.push({ label: buildFullPinyin(sm, ym, 0), tone: 0 });
+
+    const container = document.getElementById('toneOptions');
+    container.innerHTML = '';
+    options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'opt-btn';
+        btn.textContent = opt.label;
+        btn.style.fontSize = '1.3em';
+        btn.style.padding = '10px 20px';
+        btn.onclick = () => {
+            if (answered) return;
+            answered = true;
+            const isCorrect = opt.tone === tone;
+            const fb = document.getElementById('toneFeedback');
+            if (isCorrect) {
+                correct++; streak++;
+                btn.classList.add('correct');
+                fb.textContent = `✅ 正确！${hanzi} → ${buildFullPinyin(sm, ym, tone)}`;
+                fb.className = 'feedback correct';
+            } else {
+                wrong++; streak = 0;
+                btn.classList.add('wrong');
+                fb.textContent = `❌ 正确答案：${buildFullPinyin(sm, ym, tone)}（${['轻声','一声','二声','三声','四声'][tone]}）`;
+                fb.className = 'feedback wrong';
+                // 高亮正确的
+                container.querySelectorAll('.opt-btn').forEach(b => {
+                    if (b.textContent === buildFullPinyin(sm, ym, tone)) b.classList.add('correct');
+                });
+            }
+            container.querySelectorAll('.opt-btn').forEach(b => b.classList.add('disabled'));
+            updateScore();
+            setTimeout(() => newQuestion(), 1500);
+        };
+        container.appendChild(btn);
+    });
+}
+
+// ========== 拼音表 ==========
+function renderTable() {
+    const smContainer = document.getElementById('smTable');
+    smContainer.innerHTML = '';
+    SHENGMU.forEach(s => {
+        const span = document.createElement('span');
+        span.className = 'opt-btn';
+        span.textContent = s;
+        span.style.cursor = 'default';
+        span.style.borderColor = '#a5d6a7';
+        span.style.color = '#2e7d32';
+        smContainer.appendChild(span);
+    });
+
+    const ymContainer = document.getElementById('ymTable');
+    ymContainer.innerHTML = '';
+    YUNMU.forEach(y => {
+        const span = document.createElement('span');
+        span.className = 'opt-btn';
+        span.textContent = y;
+        span.style.cursor = 'default';
+        span.style.borderColor = '#90caf9';
+        span.style.color = '#1565c0';
+        ymContainer.appendChild(span);
+    });
+
+    const sdContainer = document.getElementById('sdTable');
+    sdContainer.innerHTML = '';
+    const examples = [
+        {tone:1, label:'一声 ˉ', ex:'mā 妈'},
+        {tone:2, label:'二声 ˊ', ex:'má 麻'},
+        {tone:3, label:'三声 ˇ', ex:'mǎ 马'},
+        {tone:4, label:'四声 ˋ', ex:'mà 骂'},
+        {tone:0, label:'轻声', ex:'ma 吗'},
+    ];
+    examples.forEach(e => {
+        const span = document.createElement('span');
+        span.className = 'opt-btn';
+        span.innerHTML = `<strong>${e.label}</strong><br><small>${e.ex}</small>`;
+        span.style.cursor = 'default';
+        span.style.borderColor = '#ffcc80';
+        span.style.color = '#e65100';
+        span.style.minWidth = '90px';
+        sdContainer.appendChild(span);
+    });
+}
+
+// ========== 新题目 ==========
+function newQuestion() {
+    document.getElementById('combineSubmit').textContent = '确认提交';
+    document.getElementById('splitSubmit').textContent = '确认提交';
+    if (currentMode === 'combine') newCombineQuestion();
+    else if (currentMode === 'split') newSplitQuestion();
+    else if (currentMode === 'tone') newToneQuestion();
+}
+
+// 初始化
+newQuestion();
+</script>
+</body>
+</html>
