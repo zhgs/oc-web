@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🖼️ 逻辑拼图 - 图形推理训练</title>
+    <title>馃柤锔?閫昏緫鎷煎浘 - 鍥惧舰鎺ㄧ悊璁粌</title>
     <style>
         * {
             margin: 0;
@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Arial', 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(120deg, #d4fc79 0%, #96e6a1 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -257,38 +257,38 @@
 </head>
 <body>
     <div class="container">
-        <h1>🖼️ 逻辑拼图</h1>
-        <p class="subtitle">拖拽拼图块，完成图案！右键点击可旋转</p>
+        <h1>馃柤锔?閫昏緫鎷煎浘</h1>
+        <p class="subtitle">鎷栨嫿鎷煎浘鍧楋紝瀹屾垚鍥炬锛佸彸閿偣鍑诲彲鏃嬭浆</p>
 
         <div class="controls">
             <div class="control-group">
-                <label>图案类型</label>
+                <label>鍥炬绫诲瀷</label>
                 <select id="categorySelect">
-                    <option value="animal">🐾 动物</option>
-                    <option value="cartoon">🎨 卡通</option>
-                    <option value="geometry">🔷 几何</option>
+                    <option value="animal">馃惥 鍔ㄧ墿</option>
+                    <option value="cartoon">馃帹 鍗￠€?/option>
+                    <option value="geometry">馃敺 鍑犱綍</option>
                 </select>
             </div>
 
             <div class="control-group">
-                <label>难度等级</label>
+                <label>闅惧害绛夌骇</label>
                 <select id="difficultySelect">
-                    <option value="4">简单 (2×2)</option>
-                    <option value="9">中等 (3×3)</option>
-                    <option value="16">困难 (4×4)</option>
+                    <option value="4">绠€鍗?(2脳2)</option>
+                    <option value="9">涓瓑 (3脳3)</option>
+                    <option value="16">鍥伴毦 (4脳4)</option>
                 </select>
             </div>
 
-            <button onclick="startGame()">🎮 开始游戏</button>
-            <button onclick="resetGame()">🔄 重置</button>
-            <button onclick="togglePreview()">👁️ 预览</button>
+            <button onclick="startGame()">馃幃 寮€濮嬫父鎴?/button>
+            <button onclick="resetGame()">馃攧 閲嶇疆</button>
+            <button onclick="togglePreview()">馃憗锔?棰勮</button>
         </div>
 
         <div class="game-area">
             <div class="preview-area">
-                <div class="preview-label">参考图案</div>
+                <div class="preview-label">鍙傝€冨浘妗?/div>
                 <div class="preview-box" id="previewBox">
-                    <img id="previewImage" src="" alt="预览图">
+                    <img id="previewImage" src="" alt="棰勮鍥?>
                 </div>
             </div>
 
@@ -299,28 +299,28 @@
 
         <div class="stats">
             <div class="stat-item">
-                <div class="stat-label">移动次数</div>
+                <div class="stat-label">绉诲姩娆℃暟</div>
                 <div class="stat-value" id="moveCount">0</div>
             </div>
             <div class="stat-item">
-                <div class="stat-label">用时</div>
+                <div class="stat-label">鐢ㄦ椂</div>
                 <div class="stat-value" id="timeCount">00:00</div>
             </div>
             <div class="stat-item">
-                <div class="stat-label">旋转次数</div>
+                <div class="stat-label">鏃嬭浆娆℃暟</div>
                 <div class="stat-value" id="rotateCount">0</div>
             </div>
         </div>
     </div>
 
     <div class="success-message" id="successMessage">
-        <h2>🎉 恭喜完成！</h2>
+        <h2>馃帀 鎭枩瀹屾垚锛?/h2>
         <p id="successStats"></p>
-        <button onclick="startGame()">再玩一次</button>
+        <button onclick="startGame()">鍐嶇帺涓€娆?/button>
     </div>
 
     <script>
-        // 图案数据库（使用SVG数据URI）
+        // 鍥炬鏁版嵁搴擄紙浣跨敤SVG鏁版嵁URI锛?
         const patterns = {
             animal: [
                 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect fill="#FFD700" width="200" height="200"/><circle cx="70" cy="80" r="15" fill="#000"/><circle cx="130" cy="80" r="15" fill="#000"/><path d="M 60 120 Q 100 150 140 120" stroke="#000" stroke-width="5" fill="none"/><circle cx="40" cy="40" r="20" fill="#FFD700" stroke="#000" stroke-width="3"/><circle cx="160" cy="40" r="20" fill="#FFD700" stroke="#000" stroke-width="3"/></svg>'),
@@ -375,13 +375,13 @@
                 rotation: 0
             }));
             
-            // 打乱拼图
+            // 鎵撲贡鎷煎浘
             for (let i = pieces.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [pieces[i], pieces[j]] = [pieces[j], pieces[i]];
             }
             
-            // 随机旋转部分拼图块
+            // 闅忔満鏃嬭浆閮ㄥ垎鎷煎浘鍧?
             pieces.forEach(piece => {
                 if (Math.random() > 0.5) {
                     piece.rotation = [0, 90, 180, 270][Math.floor(Math.random() * 4)];
@@ -472,7 +472,7 @@
         function showSuccess() {
             const time = document.getElementById('timeCount').textContent;
             document.getElementById('successStats').textContent = 
-                `用时: ${time} | 移动: ${moves}次 | 旋转: ${rotations}次`;
+                `鐢ㄦ椂: ${time} | 绉诲姩: ${moves}娆?| 鏃嬭浆: ${rotations}娆;
             document.getElementById('successMessage').classList.add('show');
             
             setTimeout(() => {
@@ -520,7 +520,7 @@
             preview.style.display = preview.style.display === 'none' ? 'block' : 'none';
         }
 
-        // 初始化游戏
+        // 鍒濆鍖栨父鎴?
         window.onload = () => {
             startGame();
         };
