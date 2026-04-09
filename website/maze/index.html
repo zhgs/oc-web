@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧭 儿童路径迷宫</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+        }
+        .header {
+            text-align: center;
+            margin: 10px 0;
+        }
+        .header h1 {
+            font-size: 1.8em;
+            color: #4a4a8a;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        .header p { color: #666; font-size: 0.95em; margin-top: 4px; }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .controls button, .controls select {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 20px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .controls select {
+            background: #fff;
+            color: #4a4a8a;
+            border: 2px solid #b8b8e8;
+            outline: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            box-shadow: 0 3px 10px rgba(102,126,234,0.4);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,0.5); }
+        .btn-hint {
+            background: linear-gradient(135deg, #f6d365, #fda085);
+            color: #fff;
+            box-shadow: 0 3px 10px rgba(253,160,133,0.4);
+        }
+        .btn-hint:hover { transform: translateY(-2px); }
+        .btn-back {
+            background: linear-gradient(135deg, #a1c4fd, #c2e9fb);
+            color: #4a4a8a;
+        }
+
+        .info-bar {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 1.1em;
+            color: #4a4a8a;
+        }
+        .info-bar span { font-weight: bold; }
+        .steps-count { color: #764ba2; }
+        .timer { color: #e85d75; }
+
+        .maze-wrapper {
+            position: relative;
+            margin: 10px auto;
+        }
+        canvas {
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            display: block;
+            background: #fff;
+            touch-action: none;
+        }
+
+        .d-pad {
+            display: grid;
+            grid-template-areas:
+                ". up ."
+                "left . right"
+                ". down .";
+            gap: 6px;
+            margin: 12px auto;
+            width: fit-content;
+        }
+        .d-pad button {
+            width: 56px; height: 56px;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.5em;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            box-shadow: 0 3px 8px rgba(102,126,234,0.3);
+            transition: all 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .d-pad button:active { transform: scale(0.9); }
+        .d-pad .up { grid-area: up; }
+        .d-pad .down { grid-area: down; }
+        .d-pad .left { grid-area: left; }
+        .d-pad .right { grid-area: right; }
+
+        .win-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .win-overlay.show { display: flex; }
+        .win-box {
+            background: #fff;
+            border-radius: 20px;
+            padding: 30px 40px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: popIn 0.4s ease;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .win-box h2 { font-size: 2em; color: #4a4a8a; margin-bottom: 10px; }
+        .win-box p { color: #666; font-size: 1.1em; margin: 6px 0; }
+        .win-box .stars { font-size: 2.5em; margin: 10px 0; }
+        .win-box button {
+            margin: 8px 6px 0;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 20px;
+            font-size: 1em;
+            cursor: pointer;
+            color: #fff;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transition: all 0.2s;
+        }
+        .win-box button:hover { transform: translateY(-2px); }
+
+        @media (max-width: 500px) {
+            .header h1 { font-size: 1.4em; }
+            .d-pad button { width: 48px; height: 48px; font-size: 1.3em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧭 儿童路径迷宫</h1>
+        <p>帮助小兔子找到胡萝卜吧！</p>
+    </div>
+
+    <div class="controls">
+        <select id="levelSelect" aria-label="选择难度">
+            <option value="easy">🌱 初级 (8×8)</option>
+            <option value="medium">🌿 中级 (12×12)</option>
+            <option value="hard">🌳 高级 (16×16)</option>
+        </select>
+        <button class="btn-primary" onclick="newGame()">🔄 重新开始</button>
+        <button class="btn-hint" onclick="showHint()">💡 路径提示</button>
+        <a href="../index.html"><button class="btn-back">🏠 返回首页</button></a>
+    </div>
+
+    <div class="info-bar">
+        <div>步数: <span class="steps-count" id="steps">0</span></div>
+        <div>时间: <span class="timer" id="timer">00:00</span></div>
+    </div>
+
+    <div class="maze-wrapper">
+        <canvas id="mazeCanvas"></canvas>
+    </div>
+
+    <div class="d-pad">
+        <button class="up" onclick="move(0,-1)" aria-label="上">⬆️</button>
+        <button class="left" onclick="move(-1,0)" aria-label="左">⬅️</button>
+        <button class="right" onclick="move(1,0)" aria-label="右">➡️</button>
+        <button class="down" onclick="move(0,1)" aria-label="下">⬇️</button>
+    </div>
+
+    <div class="win-overlay" id="winOverlay">
+        <div class="win-box">
+            <h2>🎉 恭喜通关！</h2>
+            <div class="stars" id="winStars"></div>
+            <p id="winSteps"></p>
+            <p id="winTime"></p>
+            <button onclick="newGame()">🔄 再来一局</button>
+            <button onclick="nextLevel()">⏩ 下一难度</button>
+        </div>
+    </div>
+
+<script>
+const canvas = document.getElementById('mazeCanvas');
+const ctx = canvas.getContext('2d');
+const levelSelect = document.getElementById('levelSelect');
+
+const LEVELS = {
+    easy:   { cols: 8,  rows: 8  },
+    medium: { cols: 12, rows: 12 },
+    hard:   { cols: 16, rows: 16 }
+};
+
+let maze, cols, rows, cellSize, player, goal, steps, timerInterval, seconds, hintPath, showingHint;
+
+function getCellSize() {
+    const maxW = Math.min(window.innerWidth - 24, 480);
+    const level = LEVELS[levelSelect.value];
+    return Math.floor(maxW / level.cols);
+}
+
+// Maze generation using recursive backtracker
+function generateMaze(c, r) {
+    // Each cell: { top, right, bottom, left, visited }
+    const grid = [];
+    for (let y = 0; y < r; y++) {
+        grid[y] = [];
+        for (let x = 0; x < c; x++) {
+            grid[y][x] = { top: true, right: true, bottom: true, left: true, visited: false };
+        }
+    }
+    const stack = [];
+    let cur = { x: 0, y: 0 };
+    grid[0][0].visited = true;
+    let visitedCount = 1;
+    const total = c * r;
+
+    function neighbors(cx, cy) {
+        const dirs = [];
+        if (cy > 0 && !grid[cy-1][cx].visited) dirs.push({ x: cx, y: cy-1, wall: 'top' });
+        if (cx < c-1 && !grid[cy][cx+1].visited) dirs.push({ x: cx+1, y: cy, wall: 'right' });
+        if (cy < r-1 && !grid[cy+1][cx].visited) dirs.push({ x: cx, y: cy+1, wall: 'bottom' });
+        if (cx > 0 && !grid[cy][cx-1].visited) dirs.push({ x: cx-1, y: cy, wall: 'left' });
+        return dirs;
+    }
+
+    while (visitedCount < total) {
+        const nb = neighbors(cur.x, cur.y);
+        if (nb.length > 0) {
+            const next = nb[Math.floor(Math.random() * nb.length)];
+            stack.push(cur);
+            // Remove walls
+            if (next.wall === 'top')    { grid[cur.y][cur.x].top = false; grid[next.y][next.x].bottom = false; }
+            if (next.wall === 'right')  { grid[cur.y][cur.x].right = false; grid[next.y][next.x].left = false; }
+            if (next.wall === 'bottom') { grid[cur.y][cur.x].bottom = false; grid[next.y][next.x].top = false; }
+            if (next.wall === 'left')   { grid[cur.y][cur.x].left = false; grid[next.y][next.x].right = false; }
+            cur = { x: next.x, y: next.y };
+            grid[cur.y][cur.x].visited = true;
+            visitedCount++;
+        } else {
+            cur = stack.pop();
+        }
+    }
+    return grid;
+}
+
+// BFS to find shortest path
+function solveMaze(grid, sx, sy, ex, ey) {
+    const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
+    const queue = [{ x: sx, y: sy, path: [{ x: sx, y: sy }] }];
+    visited[sy][sx] = true;
+
+    while (queue.length > 0) {
+        const { x, y, path } = queue.shift();
+        if (x === ex && y === ey) return path;
+
+        const cell = grid[y][x];
+        const dirs = [
+            { dx: 0, dy: -1, wall: 'top' },
+            { dx: 1, dy: 0, wall: 'right' },
+            { dx: 0, dy: 1, wall: 'bottom' },
+            { dx: -1, dy: 0, wall: 'left' }
+        ];
+        for (const d of dirs) {
+            const nx = x + d.dx, ny = y + d.dy;
+            if (nx >= 0 && nx < cols && ny >= 0 && ny < rows && !cell[d.wall] && !visited[ny][nx]) {
+                visited[ny][nx] = true;
+                queue.push({ x: nx, y: ny, path: [...path, { x: nx, y: ny }] });
+            }
+        }
+    }
+    return [];
+}
+
+function drawMaze() {
+    const w = cols * cellSize;
+    const h = rows * cellSize;
+    canvas.width = w;
+    canvas.height = h;
+    ctx.clearRect(0, 0, w, h);
+
+    // Background
+    ctx.fillStyle = '#fefefe';
+    ctx.fillRect(0, 0, w, h);
+
+    // Hint path
+    if (showingHint && hintPath.length > 0) {
+        ctx.strokeStyle = 'rgba(253, 160, 133, 0.5)';
+        ctx.lineWidth = cellSize * 0.3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(hintPath[0].x * cellSize + cellSize / 2, hintPath[0].y * cellSize + cellSize / 2);
+        for (let i = 1; i < hintPath.length; i++) {
+            ctx.lineTo(hintPath[i].x * cellSize + cellSize / 2, hintPath[i].y * cellSize + cellSize / 2);
+        }
+        ctx.stroke();
+    }
+
+    // Walls
+    ctx.strokeStyle = '#7c7cbf';
+    ctx.lineWidth = 2;
+    for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+            const cell = maze[y][x];
+            const px = x * cellSize, py = y * cellSize;
+            if (cell.top)    { ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + cellSize, py); ctx.stroke(); }
+            if (cell.right)  { ctx.beginPath(); ctx.moveTo(px + cellSize, py); ctx.lineTo(px + cellSize, py + cellSize); ctx.stroke(); }
+            if (cell.bottom) { ctx.beginPath(); ctx.moveTo(px, py + cellSize); ctx.lineTo(px + cellSize, py + cellSize); ctx.stroke(); }
+            if (cell.left)   { ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, py + cellSize); ctx.stroke(); }
+        }
+    }
+
+    // Goal (carrot)
+    const gx = goal.x * cellSize + cellSize / 2;
+    const gy = goal.y * cellSize + cellSize / 2;
+    ctx.font = `${cellSize * 0.65}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🥕', gx, gy);
+
+    // Player (rabbit)
+    const px = player.x * cellSize + cellSize / 2;
+    const py = player.y * cellSize + cellSize / 2;
+    ctx.font = `${cellSize * 0.65}px serif`;
+    ctx.fillText('🐰', px, py);
+}
+
+function move(dx, dy) {
+    const cell = maze[player.y][player.x];
+    const nx = player.x + dx, ny = player.y + dy;
+    if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) return;
+
+    // Check wall
+    if (dx === 0 && dy === -1 && cell.top) return;
+    if (dx === 1 && dy === 0 && cell.right) return;
+    if (dx === 0 && dy === 1 && cell.bottom) return;
+    if (dx === -1 && dy === 0 && cell.left) return;
+
+    player.x = nx;
+    player.y = ny;
+    steps++;
+    document.getElementById('steps').textContent = steps;
+    showingHint = false;
+    drawMaze();
+
+    if (player.x === goal.x && player.y === goal.y) {
+        winGame();
+    }
+}
+
+function startTimer() {
+    clearInterval(timerInterval);
+    seconds = 0;
+    document.getElementById('timer').textContent = '00:00';
+    timerInterval = setInterval(() => {
+        seconds++;
+        const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+        const s = String(seconds % 60).padStart(2, '0');
+        document.getElementById('timer').textContent = `${m}:${s}`;
+    }, 1000);
+}
+
+function showHint() {
+    hintPath = solveMaze(maze, player.x, player.y, goal.x, goal.y);
+    showingHint = true;
+    drawMaze();
+    // Auto-hide after 3 seconds
+    setTimeout(() => { showingHint = false; drawMaze(); }, 3000);
+}
+
+function winGame() {
+    clearInterval(timerInterval);
+    const optimal = solveMaze(maze, 0, 0, goal.x, goal.y).length - 1;
+    const ratio = steps / Math.max(optimal, 1);
+    let stars = '⭐';
+    if (ratio <= 1.2) stars = '⭐⭐⭐';
+    else if (ratio <= 1.8) stars = '⭐⭐';
+
+    const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const s = String(seconds % 60).padStart(2, '0');
+
+    document.getElementById('winStars').textContent = stars;
+    document.getElementById('winSteps').textContent = `步数: ${steps} (最优: ${optimal})`;
+    document.getElementById('winTime').textContent = `用时: ${m}:${s}`;
+    document.getElementById('winOverlay').classList.add('show');
+}
+
+function nextLevel() {
+    const levels = ['easy', 'medium', 'hard'];
+    const cur = levels.indexOf(levelSelect.value);
+    if (cur < levels.length - 1) {
+        levelSelect.value = levels[cur + 1];
+    }
+    newGame();
+}
+
+function newGame() {
+    document.getElementById('winOverlay').classList.remove('show');
+    const level = LEVELS[levelSelect.value];
+    cols = level.cols;
+    rows = level.rows;
+    cellSize = getCellSize();
+    maze = generateMaze(cols, rows);
+    player = { x: 0, y: 0 };
+    goal = { x: cols - 1, y: rows - 1 };
+    steps = 0;
+    showingHint = false;
+    hintPath = [];
+    document.getElementById('steps').textContent = '0';
+    startTimer();
+    drawMaze();
+}
+
+// Keyboard controls
+document.addEventListener('keydown', (e) => {
+    switch (e.key) {
+        case 'ArrowUp':    case 'w': case 'W': e.preventDefault(); move(0, -1); break;
+        case 'ArrowDown':  case 's': case 'S': e.preventDefault(); move(0, 1); break;
+        case 'ArrowLeft':  case 'a': case 'A': e.preventDefault(); move(-1, 0); break;
+        case 'ArrowRight': case 'd': case 'D': e.preventDefault(); move(1, 0); break;
+    }
+});
+
+// Swipe support
+let touchStartX, touchStartY;
+canvas.addEventListener('touchstart', (e) => {
+    const t = e.touches[0];
+    touchStartX = t.clientX;
+    touchStartY = t.clientY;
+}, { passive: true });
+canvas.addEventListener('touchend', (e) => {
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStartX;
+    const dy = t.clientY - touchStartY;
+    const absDx = Math.abs(dx), absDy = Math.abs(dy);
+    if (Math.max(absDx, absDy) < 20) return;
+    if (absDx > absDy) {
+        move(dx > 0 ? 1 : -1, 0);
+    } else {
+        move(0, dy > 0 ? 1 : -1);
+    }
+}, { passive: true });
+
+// Responsive resize
+window.addEventListener('resize', () => {
+    cellSize = getCellSize();
+    drawMaze();
+});
+
+// Init
+newGame();
+</script>
+</body>
+</html>
