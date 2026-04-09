@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>因果关系推理训练</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .game-area {
+            margin-bottom: 30px;
+        }
+
+        .question {
+            background: #f0f4ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .question-text {
+            font-size: 1.1em;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .option {
+            padding: 15px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .option:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .option.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .option.correct {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .option.wrong {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .feedback {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .feedback.show {
+            display: block;
+        }
+
+        .feedback.correct {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .feedback.wrong {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .options {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 因果关系推理训练</h1>
+        <p class="subtitle">匹配原因与结果，训练逻辑关联与因果推理能力</p>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-label">当前题目</div>
+                <div class="stat-value" id="currentQuestion">1</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">正确数</div>
+                <div class="stat-value" id="correctCount">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">准确率</div>
+                <div class="stat-value" id="accuracy">0%</div>
+            </div>
+        </div>
+
+        <div class="game-area">
+            <div class="question">
+                <div class="question-text" id="questionText"></div>
+                <div class="options" id="optionsContainer"></div>
+                <div class="feedback" id="feedback"></div>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button class="btn-primary" id="nextBtn" disabled>下一题</button>
+            <button class="btn-secondary" id="restartBtn">重新开始</button>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                cause: "小明早上起床晚了",
+                effects: ["上学迟到了", "考试得了满分", "天气变冷了", "妈妈做了早餐"],
+                correct: 0,
+                explanation: "起床晚了会导致上学迟到，这是直接的因果关系。"
+            },
+            {
+                cause: "天空乌云密布",
+                effects: ["太阳很大", "要下雨了", "彩虹出现了", "星星很亮"],
+                correct: 1,
+                explanation: "乌云密布是下雨前的征兆，两者有明显的因果关系。"
+            },
+            {
+                cause: "小红认真复习功课",
+                effects: ["考试成绩提高", "感冒发烧", "鞋子丢了", "天气变热"],
+                correct: 0,
+                explanation: "认真复习会提高考试成绩，这是学习的因果规律。"
+            },
+            {
+                cause: "冬天气温很低",
+                effects: ["树叶变绿", "水会结冰", "花朵盛开", "蝴蝶飞舞"],
+                correct: 1,
+                explanation: "气温低于0度时，水会结冰，这是物理现象的因果关系。"
+            },
+            {
+                cause: "小狗饿了一整天",
+                effects: ["跑得更快了", "睡得更香了", "吃饭很快", "不想吃东西"],
+                correct: 2,
+                explanation: "饿了会导致吃饭速度加快，这是生理反应的因果关系。"
+            },
+            {
+                cause: "小华每天坚持锻炼",
+                effects: ["身体变弱", "体质增强", "成绩下降", "长高变矮"],
+                correct: 1,
+                explanation: "坚持锻炼会增强体质，这是健康的因果规律。"
+            },
+            {
+                cause: "植物缺少阳光和水",
+                effects: ["长得更快", "开花更多", "逐渐枯萎", "叶子变绿"],
+                correct: 2,
+                explanation: "植物缺少阳光和水会导致枯萎，这是生物的因果关系。"
+            },
+            {
+                cause: "小明打碎了花瓶",
+                effects: ["妈妈表扬他", "被妈妈批评", "得到奖励", "去游乐园"],
+                correct: 1,
+                explanation: "打碎东西通常会被批评，这是行为与后果的因果关系。"
+            },
+            {
+                cause: "春天到了",
+                effects: ["下大雪", "树叶变黄", "万物复苏", "天气变冷"],
+                correct: 2,
+                explanation: "春天到来会使万物复苏，这是季节变化的因果规律。"
+            },
+            {
+                cause: "小丽帮助了同学",
+                effects: ["被老师批评", "得到感谢", "成绩变差", "生病了"],
+                correct: 1,
+                explanation: "帮助别人通常会得到感谢，这是社交行为的因果关系。"
+            }
+        ];
+
+        let currentIndex = 0;
+        let correctAnswers = 0;
+        let selectedOption = null;
+
+        function loadQuestion() {
+            const question = questions[currentIndex];
+            document.getElementById('questionText').innerHTML = `<strong>原因：</strong>${question.cause}<br><br><strong>请选择最可能的结果：</strong>`;
+            
+            const optionsContainer = document.getElementById('optionsContainer');
+            optionsContainer.innerHTML = '';
+            
+            question.effects.forEach((effect, index) => {
+                const option = document.createElement('div');
+                option.className = 'option';
+                option.textContent = effect;
+                option.onclick = () => selectOption(index);
+                optionsContainer.appendChild(option);
+            });
+
+            document.getElementById('feedback').classList.remove('show');
+            document.getElementById('nextBtn').disabled = true;
+            selectedOption = null;
+
+            updateStats();
+        }
+
+        function selectOption(index) {
+            if (selectedOption !== null) return;
+
+            selectedOption = index;
+            const question = questions[currentIndex];
+            const options = document.querySelectorAll('.option');
+            const feedback = document.getElementById('feedback');
+
+            options[index].classList.add('selected');
+
+            if (index === question.correct) {
+                options[index].classList.add('correct');
+                feedback.className = 'feedback correct show';
+                feedback.innerHTML = `<strong>✓ 正确！</strong><br>${question.explanation}`;
+                correctAnswers++;
+            } else {
+                options[index].classList.add('wrong');
+                options[question.correct].classList.add('correct');
+                feedback.className = 'feedback wrong show';
+                feedback.innerHTML = `<strong>✗ 不对哦</strong><br>正确答案是：${question.effects[question.correct]}<br>${question.explanation}`;
+            }
+
+            document.getElementById('nextBtn').disabled = false;
+            updateStats();
+        }
+
+        function updateStats() {
+            document.getElementById('currentQuestion').textContent = currentIndex + 1;
+            document.getElementById('correctCount').textContent = correctAnswers;
+            
+            const accuracy = currentIndex > 0 ? Math.round((correctAnswers / (currentIndex + (selectedOption !== null ? 1 : 0))) * 100) : 0;
+            document.getElementById('accuracy').textContent = accuracy + '%';
+
+            const progress = ((currentIndex + 1) / questions.length) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            if (currentIndex < questions.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            const accuracy = Math.round((correctAnswers / questions.length) * 100);
+            let message = '';
+            
+            if (accuracy >= 90) {
+                message = '🎉 太棒了！你的因果推理能力非常强！';
+            } else if (accuracy >= 70) {
+                message = '👍 很好！继续加油，你会更棒的！';
+            } else if (accuracy >= 50) {
+                message = '💪 不错！多练习会进步更快哦！';
+            } else {
+                message = '🌟 加油！多思考原因和结果的关系！';
+            }
+
+            document.querySelector('.game-area').innerHTML = `
+                <div class="question">
+                    <div class="question-text" style="text-align: center; font-size: 1.3em;">
+                        <h2 style="color: #667eea; margin-bottom: 20px;">训练完成！</h2>
+                        <p style="margin: 15px 0;">总题数：${questions.length}</p>
+                        <p style="margin: 15px 0;">正确数：${correctAnswers}</p>
+                        <p style="margin: 15px 0; font-size: 1.5em; color: #667eea;">准确率：${accuracy}%</p>
+                        <p style="margin-top: 30px; color: #764ba2; font-size: 1.1em;">${message}</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('nextBtn').style.display = 'none';
+        }
+
+        function restart() {
+            currentIndex = 0;
+            correctAnswers = 0;
+            selectedOption = null;
+            document.getElementById('nextBtn').style.display = 'inline-block';
+            loadQuestion();
+        }
+
+        document.getElementById('nextBtn').onclick = nextQuestion;
+        document.getElementById('restartBtn').onclick = restart;
+
+        loadQuestion();
+    </script>
+</body>
+</html>
