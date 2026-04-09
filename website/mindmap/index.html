@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简易思维导图工具</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* 顶部工具栏 */
+        .toolbar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(99, 102, 241, 0.3);
+            padding: 10px 20px;
+            display: flex; align-items: center; gap: 12px;
+            flex-wrap: wrap;
+        }
+        .toolbar h1 {
+            font-size: 18px; margin-right: 16px;
+            background: linear-gradient(135deg, #6366f1, #22d3ee);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .toolbar button {
+            padding: 6px 14px; border: 1px solid rgba(99, 102, 241, 0.4);
+            background: rgba(99, 102, 241, 0.15); color: #c7d2fe;
+            border-radius: 8px; cursor: pointer; font-size: 13px;
+            transition: all 0.2s;
+        }
+        .toolbar button:hover { background: rgba(99, 102, 241, 0.3); }
+        .toolbar button.active { background: #6366f1; color: #fff; border-color: #6366f1; }
+        .toolbar .sep { width: 1px; height: 24px; background: rgba(99, 102, 241, 0.3); }
+        .toolbar .hint { font-size: 12px; color: #64748b; margin-left: auto; }
+
+        /* 画布 */
+        #canvas {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            cursor: grab;
+        }
+        #canvas.grabbing { cursor: grabbing; }
+
+        /* SVG 连线层 */
+        #svgLayer {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none; z-index: 1;
+        }
+        #svgLayer path {
+            fill: none; stroke-width: 2.5;
+            stroke-linecap: round;
+        }
+
+        /* 节点 */
+        .node {
+            position: absolute; z-index: 10;
+            min-width: 80px; max-width: 240px;
+            border-radius: 12px;
+            padding: 10px 16px;
+            cursor: move;
+            user-select: none;
+            transition: box-shadow 0.2s;
+            text-align: center;
+        }
+        .node:hover { z-index: 20; }
+        .node.root {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff; font-weight: 700; font-size: 16px;
+            box-shadow: 0 0 24px rgba(99, 102, 241, 0.4);
+            min-width: 120px;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        .node.root:hover { box-shadow: 0 0 36px rgba(99, 102, 241, 0.6); }
+        .node.branch {
+            background: rgba(30, 41, 59, 0.95);
+            border: 2px solid;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .node.branch:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+
+        /* 节点文字编辑 */
+        .node .text {
+            outline: none;
+            min-width: 40px;
+            word-break: break-word;
+        }
+        .node .text:focus {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px; padding: 2px 4px;
+        }
+
+        /* 添加子节点按钮 */
+        .node .add-child {
+            position: absolute; right: -12px; top: 50%; transform: translateY(-50%);
+            width: 24px; height: 24px; border-radius: 50%;
+            background: #22c55e; color: #fff;
+            border: 2px solid #0f172a;
+            font-size: 14px; line-height: 20px; text-align: center;
+            cursor: pointer; opacity: 0; transition: opacity 0.2s;
+            z-index: 30;
+        }
+        .node:hover .add-child { opacity: 1; }
+        .node .add-child:hover { background: #16a34a; transform: translateY(-50%) scale(1.15); }
+
+        /* 删除按钮 */
+        .node .del-btn {
+            position: absolute; left: -10px; top: -10px;
+            width: 22px; height: 22px; border-radius: 50%;
+            background: #ef4444; color: #fff;
+            border: 2px solid #0f172a;
+            font-size: 12px; line-height: 18px; text-align: center;
+            cursor: pointer; opacity: 0; transition: opacity 0.2s;
+            z-index: 30;
+        }
+        .node:hover .del-btn { opacity: 1; }
+        .node .del-btn:hover { background: #dc2626; transform: scale(1.15); }
+
+        /* 颜色板块 */
+        .color-palette {
+            display: flex; gap: 6px; align-items: center;
+        }
+        .color-dot {
+            width: 20px; height: 20px; border-radius: 50%;
+            cursor: pointer; border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .color-dot:hover, .color-dot.active { border-color: #fff; transform: scale(1.2); }
+
+        /* 选中态 */
+        .node.selected {
+            outline: 2px dashed #22d3ee;
+            outline-offset: 4px;
+        }
+
+        /* 返回首页 */
+        .back-link {
+            position: fixed; bottom: 16px; left: 16px; z-index: 100;
+            color: #64748b; text-decoration: none; font-size: 13px;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: #c7d2fe; }
+
+        /* 缩放指示 */
+        .zoom-info {
+            position: fixed; bottom: 16px; right: 16px; z-index: 100;
+            color: #64748b; font-size: 12px;
+        }
+
+        /* 教程弹窗 */
+        .tutorial-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7); z-index: 200;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .tutorial-overlay.hidden { display: none; }
+        .tutorial-box {
+            background: #1e293b; border: 1px solid rgba(99,102,241,0.3);
+            border-radius: 16px; padding: 32px; max-width: 480px;
+            text-align: center;
+        }
+        .tutorial-box h2 { font-size: 22px; margin-bottom: 16px; color: #c7d2fe; }
+        .tutorial-box p { color: #94a3b8; line-height: 1.8; margin-bottom: 8px; font-size: 14px; }
+        .tutorial-box .keys { display: inline-block; background: rgba(99,102,241,0.2); padding: 2px 8px; border-radius: 4px; font-family: monospace; color: #a5b4fc; }
+        .tutorial-box button {
+            margin-top: 20px; padding: 10px 32px;
+            background: #6366f1; color: #fff; border: none;
+            border-radius: 10px; font-size: 15px; cursor: pointer;
+        }
+        .tutorial-box button:hover { background: #4f46e5; }
+    </style>
+</head>
+<body>
+
+<!-- 教程 -->
+<div class="tutorial-overlay" id="tutorial">
+    <div class="tutorial-box">
+        <h2>🌳 简易思维导图</h2>
+        <p>🖱️ <strong>拖拽节点</strong>移动位置</p>
+        <p>➕ 悬停节点右侧 <strong>绿色按钮</strong> 添加分支</p>
+        <p>✏️ <strong>双击文字</strong>即可编辑内容</p>
+        <p>❌ 悬停节点左上 <strong>红色按钮</strong> 删除节点</p>
+        <p>🖐️ 按住空白区域 <strong>拖拽平移</strong> 画布</p>
+        <p>🔍 <span class="keys">滚轮</span> 缩放画布</p>
+        <p>🎨 工具栏选择 <strong>分支颜色</strong></p>
+        <p>💾 <span class="keys">导出JSON</span> / <span class="keys">导入JSON</span> 保存恢复</p>
+        <button onclick="closeTutorial()">开始使用 🚀</button>
+    </div>
+</div>
+
+<!-- 工具栏 -->
+<div class="toolbar">
+    <h1>🌳 思维导图</h1>
+    <div class="sep"></div>
+    <button onclick="addRootNode()">＋中心主题</button>
+    <div class="sep"></div>
+    <span style="font-size:13px;color:#94a3b8;">分支颜色:</span>
+    <div class="color-palette" id="palette"></div>
+    <div class="sep"></div>
+    <button onclick="clearAll()">🗑 清空</button>
+    <button onclick="exportJSON()">💾 导出</button>
+    <button onclick="importJSON()">📂 导入</button>
+    <button onclick="autoLayout()">📐 自动排列</button>
+    <button onclick="showTutorial()">❓ 帮助</button>
+    <span class="hint">双击编辑 · 悬停显示按钮 · 滚轮缩放</span>
+</div>
+
+<!-- 画布 -->
+<div id="canvas">
+    <svg id="svgLayer"></svg>
+</div>
+
+<a href="../index.html" class="back-link">← 返回导航中心</a>
+<div class="zoom-info" id="zoomInfo">100%</div>
+
+<script>
+// ======== 配置 ========
+const COLORS = [
+    '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',
+    '#f59e0b', '#22c55e', '#06b6d4', '#3b82f6'
+];
+let currentColor = COLORS[0];
+
+// ======== 状态 ========
+let nodes = [];      // { id, x, y, text, parentId, color, isRoot }
+let nextId = 1;
+let panX = 0, panY = 0, scale = 1;
+let isPanning = false, panStartX, panStartY;
+let dragNode = null, dragOffX, dragOffY;
+let selectedNode = null;
+
+// ======== 初始化 ========
+const canvas = document.getElementById('canvas');
+const svgLayer = document.getElementById('svgLayer');
+
+// 颜色面板
+const palette = document.getElementById('palette');
+COLORS.forEach(c => {
+    const dot = document.createElement('div');
+    dot.className = 'color-dot' + (c === currentColor ? ' active' : '');
+    dot.style.background = c;
+    dot.onclick = () => {
+        currentColor = c;
+        palette.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+        dot.classList.add('active');
+        if (selectedNode && !selectedNode.isRoot) {
+            selectedNode.color = c;
+            render();
+        }
+    };
+    palette.appendChild(dot);
+});
+
+// 教程
+function closeTutorial() { document.getElementById('tutorial').classList.add('hidden'); }
+function showTutorial() { document.getElementById('tutorial').classList.remove('hidden'); }
+if (localStorage.getItem('mindmap_visited')) closeTutorial();
+else localStorage.setItem('mindmap_visited', '1');
+
+// ======== 节点操作 ========
+function addRootNode() {
+    const cx = (window.innerWidth / 2 - panX) / scale;
+    const cy = (window.innerHeight / 2 - panY) / scale;
+    nodes.push({ id: nextId++, x: cx - 60, y: cy - 20, text: '中心主题', parentId: null, color: '#6366f1', isRoot: true });
+    render();
+}
+
+function addChild(parentId) {
+    const parent = nodes.find(n => n.id === parentId);
+    if (!parent) return;
+    // 计算已有子节点数量确定偏移
+    const children = nodes.filter(n => n.parentId === parentId);
+    const offsetY = (children.length - Math.floor(children.length / 2)) * 70;
+    nodes.push({
+        id: nextId++,
+        x: parent.x + 220,
+        y: parent.y + offsetY,
+        text: '新分支',
+        parentId: parentId,
+        color: currentColor,
+        isRoot: false
+    });
+    render();
+}
+
+function deleteNode(id) {
+    // 递归删除子节点
+    const toDelete = new Set();
+    function collect(nid) {
+        toDelete.add(nid);
+        nodes.filter(n => n.parentId === nid).forEach(n => collect(n.id));
+    }
+    collect(id);
+    nodes = nodes.filter(n => !toDelete.has(n.id));
+    if (selectedNode && toDelete.has(selectedNode.id)) selectedNode = null;
+    render();
+}
+
+// ======== 渲染 ========
+function render() {
+    // 清理旧节点DOM（保留svg）
+    canvas.querySelectorAll('.node').forEach(el => el.remove());
+
+    // 画连线
+    let pathsHTML = '';
+    nodes.forEach(n => {
+        if (n.parentId != null) {
+            const parent = nodes.find(p => p.id === n.parentId);
+            if (parent) {
+                const px = parent.x * scale + panX;
+                const py = parent.y * scale + panY;
+                const pw = getNodeWidth(parent) * scale;
+                const ph = 40 * scale;
+                const nx = n.x * scale + panX;
+                const ny = n.y * scale + panY;
+                const nh = 40 * scale;
+
+                const x1 = px + pw;
+                const y1 = py + ph / 2;
+                const x2 = nx;
+                const y2 = ny + nh / 2;
+                const cx1 = x1 + (x2 - x1) * 0.5;
+                const cy1 = y1;
+                const cx2 = x1 + (x2 - x1) * 0.5;
+                const cy2 = y2;
+                pathsHTML += `<path d="M${x1},${y1} C${cx1},${cy1} ${cx2},${cy2} ${x2},${y2}" stroke="${n.color}" opacity="0.6"/>`;
+            }
+        }
+    });
+    svgLayer.innerHTML = pathsHTML;
+
+    // 创建节点 DOM
+    nodes.forEach(n => {
+        const el = document.createElement('div');
+        el.className = 'node ' + (n.isRoot ? 'root' : 'branch');
+        if (selectedNode && selectedNode.id === n.id) el.classList.add('selected');
+        if (!n.isRoot) el.style.borderColor = n.color;
+        el.style.left = (n.x * scale + panX) + 'px';
+        el.style.top = (n.y * scale + panY) + 'px';
+        el.style.transform = `scale(${scale})`;
+        el.style.transformOrigin = 'top left';
+        el.dataset.id = n.id;
+
+        // 文字
+        const txt = document.createElement('div');
+        txt.className = 'text';
+        txt.textContent = n.text;
+        txt.ondblclick = (e) => {
+            e.stopPropagation();
+            txt.contentEditable = true;
+            txt.focus();
+            // 选中全部
+            const range = document.createRange();
+            range.selectNodeContents(txt);
+            const sel = window.getSelection();
+            sel.removeAllRanges(); sel.addRange(range);
+        };
+        txt.onblur = () => {
+            txt.contentEditable = false;
+            n.text = txt.textContent.trim() || (n.isRoot ? '中心主题' : '新分支');
+            render();
+        };
+        txt.onkeydown = (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); txt.blur(); }
+        };
+        el.appendChild(txt);
+
+        // 添加子节点按钮
+        const addBtn = document.createElement('div');
+        addBtn.className = 'add-child';
+        addBtn.textContent = '+';
+        addBtn.onclick = (e) => { e.stopPropagation(); addChild(n.id); };
+        el.appendChild(addBtn);
+
+        // 删除按钮（非根节点或允许删根）
+        const delBtn = document.createElement('div');
+        delBtn.className = 'del-btn';
+        delBtn.textContent = '×';
+        delBtn.onclick = (e) => { e.stopPropagation(); deleteNode(n.id); };
+        el.appendChild(delBtn);
+
+        // 拖拽
+        el.onmousedown = (e) => {
+            if (e.target.classList.contains('add-child') || e.target.classList.contains('del-btn')) return;
+            if (e.target.contentEditable === 'true') return;
+            e.stopPropagation();
+            dragNode = n;
+            dragOffX = e.clientX / scale - n.x;
+            dragOffY = e.clientY / scale - n.y;
+            selectedNode = n;
+            render();
+        };
+
+        // 触摸拖拽
+        el.ontouchstart = (e) => {
+            if (e.target.classList.contains('add-child') || e.target.classList.contains('del-btn')) return;
+            if (e.target.contentEditable === 'true') return;
+            e.stopPropagation();
+            const t = e.touches[0];
+            dragNode = n;
+            dragOffX = t.clientX / scale - n.x;
+            dragOffY = t.clientY / scale - n.y;
+            selectedNode = n;
+            render();
+        };
+
+        canvas.appendChild(el);
+    });
+}
+
+function getNodeWidth(n) {
+    // 估算节点宽度
+    const len = n.text.length;
+    if (n.isRoot) return Math.max(120, len * 18 + 32);
+    return Math.max(80, len * 14 + 32);
+}
+
+// ======== 画布平移 ========
+canvas.onmousedown = (e) => {
+    if (e.target === canvas || e.target === svgLayer) {
+        isPanning = true;
+        panStartX = e.clientX - panX;
+        panStartY = e.clientY - panY;
+        canvas.classList.add('grabbing');
+        // 取消选中
+        selectedNode = null;
+        render();
+    }
+};
+window.onmousemove = (e) => {
+    if (dragNode) {
+        dragNode.x = e.clientX / scale - dragOffX;
+        dragNode.y = e.clientY / scale - dragOffY;
+        render();
+    } else if (isPanning) {
+        panX = e.clientX - panStartX;
+        panY = e.clientY - panStartY;
+        render();
+    }
+};
+window.onmouseup = () => {
+    dragNode = null;
+    isPanning = false;
+    canvas.classList.remove('grabbing');
+};
+
+// 触摸
+canvas.ontouchstart = (e) => {
+    if (e.target === canvas || e.target === svgLayer) {
+        isPanning = true;
+        const t = e.touches[0];
+        panStartX = t.clientX - panX;
+        panStartY = t.clientY - panY;
+    }
+};
+window.ontouchmove = (e) => {
+    const t = e.touches[0];
+    if (dragNode) {
+        e.preventDefault();
+        dragNode.x = t.clientX / scale - dragOffX;
+        dragNode.y = t.clientY / scale - dragOffY;
+        render();
+    } else if (isPanning) {
+        panX = t.clientX - panStartX;
+        panY = t.clientY - panStartY;
+        render();
+    }
+};
+window.ontouchend = () => {
+    dragNode = null;
+    isPanning = false;
+};
+
+// ======== 缩放 ========
+canvas.onwheel = (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    const newScale = Math.min(3, Math.max(0.2, scale * delta));
+    // 以鼠标为中心缩放
+    const mx = e.clientX, my = e.clientY;
+    panX = mx - (mx - panX) * (newScale / scale);
+    panY = my - (my - panY) * (newScale / scale);
+    scale = newScale;
+    document.getElementById('zoomInfo').textContent = Math.round(scale * 100) + '%';
+    render();
+};
+
+// ======== 键盘 ========
+window.onkeydown = (e) => {
+    // Delete 删除选中节点
+    if (e.key === 'Delete' && selectedNode) {
+        deleteNode(selectedNode.id);
+    }
+    // Tab 添加子节点
+    if (e.key === 'Tab' && selectedNode) {
+        e.preventDefault();
+        addChild(selectedNode.id);
+    }
+};
+
+// ======== 工具栏功能 ========
+function clearAll() {
+    if (nodes.length === 0) return;
+    if (confirm('确定要清空所有节点吗？')) {
+        nodes = []; selectedNode = null; nextId = 1;
+        render();
+    }
+}
+
+function exportJSON() {
+    const data = JSON.stringify({ nodes, nextId }, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'mindmap_' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+}
+
+function importJSON() {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = '.json';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const data = JSON.parse(ev.target.result);
+                if (data.nodes && Array.isArray(data.nodes)) {
+                    nodes = data.nodes;
+                    nextId = data.nextId || nodes.reduce((m, n) => Math.max(m, n.id), 0) + 1;
+                    selectedNode = null;
+                    // 居中
+                    centerView();
+                    render();
+                }
+            } catch (err) {
+                alert('文件格式错误');
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+function autoLayout() {
+    // 找到所有根节点
+    const roots = nodes.filter(n => n.parentId == null);
+    if (roots.length === 0) return;
+
+    const hGap = 240, vGap = 70;
+
+    roots.forEach((root, ri) => {
+        root.x = 200;
+        root.y = 200 + ri * 400;
+        layoutChildren(root, root.x + hGap, root.y, vGap);
+    });
+    centerView();
+    render();
+}
+
+function layoutChildren(parent, startX, centerY, vGap) {
+    const children = nodes.filter(n => n.parentId === parent.id);
+    if (children.length === 0) return;
+    const totalH = children.length * vGap;
+    let y = centerY - totalH / 2 + vGap / 2;
+    children.forEach(child => {
+        child.x = startX;
+        child.y = y;
+        y += vGap;
+        layoutChildren(child, startX + 240, child.y, vGap * 0.85);
+    });
+}
+
+function centerView() {
+    if (nodes.length === 0) return;
+    const xs = nodes.map(n => n.x);
+    const ys = nodes.map(n => n.y);
+    const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+    const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+    panX = window.innerWidth / 2 - cx * scale;
+    panY = window.innerHeight / 2 - cy * scale;
+}
+
+// ======== 初始化默认内容 ========
+function initDefault() {
+    const cx = window.innerWidth / 2 / scale;
+    const cy = window.innerHeight / 2 / scale;
+
+    nodes = [
+        { id: 1, x: cx - 60, y: cy - 20, text: '中心主题', parentId: null, color: '#6366f1', isRoot: true },
+        { id: 2, x: cx + 160, y: cy - 110, text: '分支一', parentId: 1, color: '#ec4899', isRoot: false },
+        { id: 3, x: cx + 160, y: cy - 20, text: '分支二', parentId: 1, color: '#22c55e', isRoot: false },
+        { id: 4, x: cx + 160, y: cy + 70, text: '分支三', parentId: 1, color: '#f59e0b', isRoot: false },
+        { id: 5, x: cx + 400, y: cy - 140, text: '子话题', parentId: 2, color: '#ec4899', isRoot: false },
+        { id: 6, x: cx + 400, y: cy - 80, text: '子话题', parentId: 2, color: '#ec4899', isRoot: false },
+    ];
+    nextId = 7;
+    render();
+}
+
+// 启动
+initDefault();
+</script>
+</body>
+</html>
