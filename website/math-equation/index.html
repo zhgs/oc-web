@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数学等式凑数 - 小学生运算训练</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;color:#333;user-select:none}
+.container{max-width:600px;margin:0 auto;padding:16px}
+header{text-align:center;color:#fff;padding:16px 0 8px}
+header h1{font-size:1.6em;margin-bottom:4px}
+header p{opacity:.85;font-size:.9em}
+.back-btn{position:absolute;top:16px;left:16px;color:#fff;text-decoration:none;font-size:1.1em;opacity:.8;transition:opacity .2s}
+.back-btn:hover{opacity:1}
+
+/* 难度选择 */
+.level-bar{display:flex;justify-content:center;gap:8px;margin:12px 0}
+.level-btn{padding:8px 18px;border:2px solid rgba(255,255,255,.5);background:rgba(255,255,255,.15);color:#fff;border-radius:20px;cursor:pointer;font-size:.9em;transition:all .2s}
+.level-btn.active{background:#fff;color:#764ba2;border-color:#fff;font-weight:700}
+
+/* 运算类型 */
+.op-bar{display:flex;justify-content:center;gap:6px;margin:8px 0 16px;flex-wrap:wrap}
+.op-btn{padding:6px 14px;border:1.5px solid rgba(255,255,255,.4);background:rgba(255,255,255,.1);color:#fff;border-radius:16px;cursor:pointer;font-size:.85em;transition:all .2s}
+.op-btn.active{background:rgba(255,255,255,.9);color:#764ba2;font-weight:600}
+
+/* 游戏面板 */
+.game-panel{background:#fff;border-radius:16px;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,.15);margin-bottom:16px}
+.stats{display:flex;justify-content:space-between;font-size:.85em;color:#888;margin-bottom:16px}
+.stats span{background:#f5f5f5;padding:4px 12px;border-radius:10px}
+
+/* 等式区域 */
+.equation-area{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;min-height:60px;margin:20px 0;font-size:1.3em;font-weight:600}
+.eq-slot{width:48px;height:48px;border:2.5px dashed #ccc;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1em;transition:all .2s;background:#fafafa}
+.eq-slot.filled{border-color:#667eea;background:#eef0ff;color:#667eea}
+.eq-slot.highlight{border-color:#f59e0b;background:#fffbeb;transform:scale(1.08)}
+.eq-slot.correct{border-color:#10b981;background:#ecfdf5;color:#10b981}
+.eq-slot.wrong{border-color:#ef4444;background:#fef2f2;color:#ef4444;animation:shake .4s}
+.eq-operator{font-size:1.2em;color:#764ba2;min-width:24px;text-align:center}
+.eq-fixed{width:48px;height:48px;background:#764ba2;color:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1em}
+.eq-equals{font-size:1.4em;color:#764ba2;font-weight:700}
+
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* 数字池 */
+.number-pool{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:20px 0}
+.num-tile{width:52px;height:52px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3em;font-weight:700;cursor:grab;transition:all .2s;box-shadow:0 3px 10px rgba(102,126,234,.3)}
+.num-tile:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(102,126,234,.4)}
+.num-tile:active{cursor:grabbing;transform:scale(.95)}
+.num-tile.used{opacity:.3;pointer-events:none;transform:scale(.9)}
+
+/* 按钮 */
+.btn-row{display:flex;gap:10px;justify-content:center;margin-top:16px}
+.btn{padding:10px 24px;border:none;border-radius:10px;font-size:.95em;cursor:pointer;transition:all .2s;font-weight:600}
+.btn-check{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
+.btn-check:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(16,185,129,.3)}
+.btn-hint{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff}
+.btn-hint:hover{transform:translateY(-1px)}
+.btn-reset{background:#f3f4f6;color:#666}
+.btn-reset:hover{background:#e5e7eb}
+.btn-next{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.btn-next:hover{transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+
+/* 结果提示 */
+.result-msg{text-align:center;padding:12px;border-radius:10px;margin-top:12px;font-weight:600;font-size:1em;display:none}
+.result-msg.show{display:block}
+.result-msg.success{background:#ecfdf5;color:#059669}
+.result-msg.fail{background:#fef2f2;color:#dc2626}
+
+/* 提示信息 */
+.hint-msg{text-align:center;color:#f59e0b;font-size:.9em;margin-top:8px;min-height:20px}
+
+/* 得分动画 */
+.score-pop{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:3em;font-weight:700;color:#10b981;pointer-events:none;animation:popUp .8s ease-out forwards;z-index:100}
+@keyframes popUp{0%{opacity:1;transform:translate(-50%,-50%) scale(.5)}50%{transform:translate(-50%,-70%) scale(1.2)}100%{opacity:0;transform:translate(-50%,-100%) scale(1)}}
+
+/* 响应式 */
+@media(max-width:400px){
+  .eq-slot,.eq-fixed{width:40px;height:40px;font-size:1em}
+  .num-tile{width:44px;height:44px;font-size:1.1em}
+  .equation-area{font-size:1.1em;gap:4px}
+}
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-btn">← 返回</a>
+<div class="container">
+<header>
+  <h1>✖️➕ 数学等式凑数</h1>
+  <p>拖动数字填入空位，让等式成立！</p>
+</header>
+
+<div class="level-bar">
+  <button class="level-btn active" data-level="easy" onclick="setLevel('easy')">🌱 初级</button>
+  <button class="level-btn" data-level="medium" onclick="setLevel('medium')">🌿 中级</button>
+  <button class="level-btn" data-level="hard" onclick="setLevel('hard')">🌳 高级</button>
+</div>
+
+<div class="op-bar">
+  <button class="op-btn active" data-op="add-sub" onclick="setOp('add-sub')">加减</button>
+  <button class="op-btn" data-op="mul-div" onclick="setOp('mul-div')">乘除</button>
+  <button class="op-btn" data-op="mix" onclick="setOp('mix')">混合</button>
+</div>
+
+<div class="game-panel">
+  <div class="stats">
+    <span>🏆 得分: <b id="score">0</b></span>
+    <span>📝 第 <b id="round">1</b> 题</span>
+    <span>💡 提示: <b id="hintCount">3</b></span>
+  </div>
+
+  <div class="equation-area" id="equationArea"></div>
+  <div class="number-pool" id="numberPool"></div>
+  <div class="hint-msg" id="hintMsg"></div>
+  <div class="result-msg" id="resultMsg"></div>
+
+  <div class="btn-row">
+    <button class="btn btn-hint" id="btnHint" onclick="useHint()">💡 提示</button>
+    <button class="btn btn-reset" onclick="resetCurrent()">🔄 重置</button>
+    <button class="btn btn-check" id="btnCheck" onclick="checkAnswer()">✅ 验证</button>
+    <button class="btn btn-next" id="btnNext" onclick="nextRound()" style="display:none">➡️ 下一题</button>
+  </div>
+</div>
+</div>
+
+<script>
+// 游戏状态
+let state = {
+  level: 'easy',
+  opType: 'add-sub',
+  score: 0,
+  round: 1,
+  hints: 3,
+  equation: null,    // {parts:[], blanks:[], answer:[], numbers:[]}
+  placed: {},        // slotIndex -> number
+  selectedSlot: null
+};
+
+// 难度配置
+const CONFIG = {
+  easy:   { range: [1,10],  blanks: 2, ops: 1 },
+  medium: { range: [1,20],  blanks: 2, ops: 2 },
+  hard:   { range: [1,50],  blanks: 3, ops: 2 }
+};
+
+function setLevel(lv) {
+  state.level = lv;
+  document.querySelectorAll('.level-btn').forEach(b => b.classList.toggle('active', b.dataset.level === lv));
+  newGame();
+}
+
+function setOp(op) {
+  state.opType = op;
+  document.querySelectorAll('.op-btn').forEach(b => b.classList.toggle('active', b.dataset.op === op));
+  newGame();
+}
+
+function newGame() {
+  state.score = 0;
+  state.round = 1;
+  state.hints = 3;
+  updateStats();
+  generateEquation();
+}
+
+function rand(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+
+function pickOp(opType) {
+  if (opType === 'add-sub') return Math.random() < 0.5 ? '+' : '-';
+  if (opType === 'mul-div') return Math.random() < 0.5 ? '×' : '÷';
+  return ['+', '-', '×', '÷'][rand(0, 3)];
+}
+
+function opSymbol(op) {
+  return {'+':'+', '-':'-', '×':'×', '÷':'÷'}[op] || op;
+}
+
+function evaluate(a, op, b) {
+  switch(op) {
+    case '+': return a + b;
+    case '-': return a - b;
+    case '×': return a * b;
+    case '÷': return a / b;
+  }
+}
+
+// 生成有效等式
+function generateEquation() {
+  const cfg = CONFIG[state.level];
+  let eq = null;
+  let attempts = 0;
+
+  while (!eq && attempts < 200) {
+    attempts++;
+    eq = tryGenerate(cfg);
+  }
+
+  if (!eq) {
+    // fallback: simple addition
+    const a = rand(1, 10), b = rand(1, 10);
+    eq = { parts: [a, '+', b, '=', a+b], values: [a, b, a+b] };
+  }
+
+  // 选择空位
+  const valueIndices = [];
+  eq.parts.forEach((p, i) => { if (typeof p === 'number') valueIndices.push(i); });
+
+  // 随机选blanks个位置作为空位
+  const numBlanks = Math.min(cfg.blanks, valueIndices.length);
+  const shuffled = valueIndices.sort(() => Math.random() - 0.5);
+  const blankIndices = shuffled.slice(0, numBlanks).sort((a,b) => a-b);
+
+  const answer = {};
+  blankIndices.forEach(i => { answer[i] = eq.parts[i]; });
+
+  // 生成数字池：正确答案 + 干扰项
+  const correctNums = blankIndices.map(i => eq.parts[i]);
+  const pool = [...correctNums];
+
+  // 添加1-2个干扰数字
+  const distractors = Math.min(2, 4 - numBlanks);
+  for (let d = 0; d < distractors; d++) {
+    let dn;
+    let tries = 0;
+    do {
+      dn = rand(cfg.range[0], cfg.range[1]);
+      tries++;
+    } while (pool.includes(dn) && tries < 20);
+    if (!pool.includes(dn)) pool.push(dn);
+  }
+
+  // 打乱
+  pool.sort(() => Math.random() - 0.5);
+
+  state.equation = {
+    parts: eq.parts,
+    blankIndices,
+    answer,
+    pool
+  };
+  state.placed = {};
+  state.selectedSlot = null;
+
+  renderEquation();
+  renderPool();
+  hideResult();
+  document.getElementById('hintMsg').textContent = '';
+  document.getElementById('btnCheck').style.display = '';
+  document.getElementById('btnNext').style.display = 'none';
+}
+
+function tryGenerate(cfg) {
+  const [lo, hi] = cfg.range;
+  const opType = state.opType;
+
+  if (cfg.ops === 1) {
+    // a op b = c
+    const op = pickOp(opType);
+    let a, b, c;
+
+    if (op === '+') {
+      a = rand(lo, hi); b = rand(lo, hi); c = a + b;
+    } else if (op === '-') {
+      a = rand(lo, hi); b = rand(lo, Math.min(a, hi)); c = a - b;
+      if (c < 0) return null;
+    } else if (op === '×') {
+      a = rand(lo, Math.min(9, hi)); b = rand(lo, Math.min(9, hi)); c = a * b;
+    } else { // ÷
+      b = rand(Math.max(1, lo), Math.min(9, hi));
+      c = rand(lo, Math.min(Math.floor(hi / b), hi));
+      a = b * c;
+      if (a > hi * 5 || a < lo) return null;
+    }
+
+    if (c < 0 || !Number.isInteger(c)) return null;
+    return { parts: [a, op, b, '=', c], values: [a, b, c] };
+
+  } else {
+    // a op1 b op2 c = d (两个运算符)
+    const op1 = pickOp(opType);
+    const op2 = pickOp(opType);
+    let a, b, c, d;
+
+    // 为了保证整数结果，用构造法
+    if (op1 === '÷' || op2 === '÷' || op1 === '×' || op2 === '×') {
+      // 简化：构造乘除友好的等式
+      a = rand(1, Math.min(12, hi));
+      b = rand(1, Math.min(12, hi));
+
+      const mid = evaluate(a, op1, b);
+      if (!Number.isInteger(mid) || mid < -100 || mid > 200) return null;
+
+      c = rand(1, Math.min(12, hi));
+      if (op2 === '÷') {
+        if (c === 0 || mid % c !== 0) return null;
+      }
+
+      d = evaluate(mid, op2, c);
+      if (!Number.isInteger(d) || d < 0 || d > 200) return null;
+
+    } else {
+      a = rand(lo, hi); b = rand(lo, hi); c = rand(lo, hi);
+      const mid = evaluate(a, op1, b);
+      d = evaluate(mid, op2, c);
+      if (d < 0 || !Number.isInteger(d)) return null;
+    }
+
+    return { parts: [a, op1, b, op2, c, '=', d], values: [a, b, c, d] };
+  }
+}
+
+function renderEquation() {
+  const area = document.getElementById('equationArea');
+  area.innerHTML = '';
+  const { parts, blankIndices } = state.equation;
+
+  parts.forEach((p, i) => {
+    if (typeof p === 'number') {
+      if (blankIndices.includes(i)) {
+        // 空位
+        const slot = document.createElement('div');
+        slot.className = 'eq-slot' + (state.placed[i] !== undefined ? ' filled' : '');
+        slot.dataset.index = i;
+        slot.textContent = state.placed[i] !== undefined ? state.placed[i] : '?';
+        slot.onclick = () => clickSlot(i);
+        if (state.selectedSlot === i) slot.classList.add('highlight');
+        area.appendChild(slot);
+      } else {
+        // 固定数字
+        const fixed = document.createElement('div');
+        fixed.className = 'eq-fixed';
+        fixed.textContent = p;
+        area.appendChild(fixed);
+      }
+    } else if (p === '=') {
+      const eq = document.createElement('span');
+      eq.className = 'eq-equals';
+      eq.textContent = '=';
+      area.appendChild(eq);
+    } else {
+      const op = document.createElement('span');
+      op.className = 'eq-operator';
+      op.textContent = opSymbol(p);
+      area.appendChild(op);
+    }
+  });
+}
+
+function renderPool() {
+  const pool = document.getElementById('numberPool');
+  pool.innerHTML = '';
+  const usedValues = Object.values(state.placed);
+
+  // 跟踪每个池中数字的使用情况
+  const usedCount = {};
+  usedValues.forEach(v => { usedCount[v] = (usedCount[v] || 0) + 1; });
+
+  const poolCount = {};
+  state.equation.pool.forEach((n, i) => {
+    poolCount[n] = (poolCount[n] || 0) + 1;
+    const tile = document.createElement('div');
+    tile.className = 'num-tile';
+    tile.textContent = n;
+    tile.dataset.poolIndex = i;
+
+    // 检查这个数字是否已被使用（考虑重复）
+    const totalOfThisNum = state.equation.pool.filter(x => x === n).length;
+    const usedOfThisNum = usedCount[n] || 0;
+    const thisNumIndex = state.equation.pool.slice(0, i + 1).filter(x => x === n).length;
+
+    if (thisNumIndex <= usedOfThisNum) {
+      tile.classList.add('used');
+    }
+
+    tile.onclick = () => clickTile(i, n);
+
+    // 拖拽支持
+    tile.draggable = true;
+    tile.ondragstart = (e) => {
+      e.dataTransfer.setData('text/plain', JSON.stringify({poolIndex: i, value: n}));
+    };
+
+    pool.appendChild(tile);
+  });
+}
+
+function clickSlot(index) {
+  if (state.placed[index] !== undefined) {
+    // 取消放置
+    delete state.placed[index];
+    state.selectedSlot = null;
+    renderEquation();
+    renderPool();
+    hideResult();
+    return;
+  }
+  state.selectedSlot = index;
+  renderEquation();
+}
+
+function clickTile(poolIndex, value) {
+  // 如果有选中的空位，直接放入
+  if (state.selectedSlot !== null && state.placed[state.selectedSlot] === undefined) {
+    state.placed[state.selectedSlot] = value;
+    state.selectedSlot = null;
+    renderEquation();
+    renderPool();
+    return;
+  }
+
+  // 否则找第一个空的slot
+  const { blankIndices } = state.equation;
+  for (const bi of blankIndices) {
+    if (state.placed[bi] === undefined) {
+      state.placed[bi] = value;
+      renderEquation();
+      renderPool();
+      return;
+    }
+  }
+}
+
+// 拖放到slot
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  const target = e.target.closest('.eq-slot');
+  if (!target) return;
+  try {
+    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+    const slotIndex = parseInt(target.dataset.index);
+    if (state.placed[slotIndex] === undefined) {
+      state.placed[slotIndex] = data.value;
+      state.selectedSlot = null;
+      renderEquation();
+      renderPool();
+    }
+  } catch(err) {}
+});
+
+function checkAnswer() {
+  const { parts, blankIndices, answer } = state.equation;
+
+  // 检查是否所有空位都已填
+  for (const bi of blankIndices) {
+    if (state.placed[bi] === undefined) {
+      showResult('请先填完所有空位！', false);
+      return;
+    }
+  }
+
+  // 构建完整等式
+  const full = parts.map((p, i) => {
+    if (blankIndices.includes(i)) return state.placed[i];
+    return p;
+  });
+
+  // 计算左边
+  const eqIdx = full.indexOf('=');
+  const left = full.slice(0, eqIdx);
+  const right = full[eqIdx + 1];
+
+  let result = left[0];
+  for (let i = 1; i < left.length; i += 2) {
+    result = evaluate(result, left[i], left[i+1]);
+  }
+
+  const correct = Math.abs(result - right) < 0.0001;
+
+  // 标记slot状态
+  const slots = document.querySelectorAll('.eq-slot');
+  slots.forEach(s => {
+    const idx = parseInt(s.dataset.index);
+    if (correct) {
+      s.classList.add('correct');
+    } else {
+      s.classList.add(state.placed[idx] === answer[idx] ? 'correct' : 'wrong');
+    }
+  });
+
+  if (correct) {
+    const points = {easy: 10, medium: 20, hard: 30}[state.level];
+    state.score += points;
+    showResult(`🎉 正确！+${points}分`, true);
+    showScorePop(`+${points}`);
+    document.getElementById('btnCheck').style.display = 'none';
+    document.getElementById('btnNext').style.display = '';
+  } else {
+    showResult('❌ 等式不成立，再想想！点击已填数字可取消', false);
+  }
+
+  updateStats();
+}
+
+function showResult(msg, success) {
+  const el = document.getElementById('resultMsg');
+  el.textContent = msg;
+  el.className = 'result-msg show ' + (success ? 'success' : 'fail');
+}
+
+function hideResult() {
+  document.getElementById('resultMsg').className = 'result-msg';
+}
+
+function showScorePop(text) {
+  const pop = document.createElement('div');
+  pop.className = 'score-pop';
+  pop.textContent = text;
+  document.body.appendChild(pop);
+  setTimeout(() => pop.remove(), 900);
+}
+
+function resetCurrent() {
+  state.placed = {};
+  state.selectedSlot = null;
+  renderEquation();
+  renderPool();
+  hideResult();
+  document.getElementById('hintMsg').textContent = '';
+  document.getElementById('btnCheck').style.display = '';
+  document.getElementById('btnNext').style.display = 'none';
+}
+
+function useHint() {
+  if (state.hints <= 0) return;
+
+  const { blankIndices, answer } = state.equation;
+  // 找一个还没正确填入的空位
+  const unfilled = blankIndices.filter(i => state.placed[i] !== answer[i]);
+  if (unfilled.length === 0) {
+    document.getElementById('hintMsg').textContent = '所有位置都已正确！';
+    return;
+  }
+
+  state.hints--;
+  const target = unfilled[0];
+  state.placed[target] = answer[target];
+
+  document.getElementById('hintMsg').textContent = `💡 已为你填入一个数字`;
+  updateStats();
+  renderEquation();
+  renderPool();
+}
+
+function nextRound() {
+  state.round++;
+  updateStats();
+  generateEquation();
+}
+
+function updateStats() {
+  document.getElementById('score').textContent = state.score;
+  document.getElementById('round').textContent = state.round;
+  document.getElementById('hintCount').textContent = state.hints;
+  document.getElementById('btnHint').disabled = state.hints <= 0;
+}
+
+// 初始化
+generateEquation();
+</script>
+</body>
+</html>
