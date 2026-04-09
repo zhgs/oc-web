@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✍️ 汉字笔画顺序练习器</title>
+    <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            color: white;
+            padding: 20px 0;
+        }
+        header h1 { font-size: 1.8em; margin-bottom: 6px; }
+        header p { opacity: 0.9; font-size: 0.95em; }
+        .back-link {
+            display: inline-block;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+        .back-link:hover { color: white; }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .card h2 {
+            font-size: 1.1em;
+            margin-bottom: 14px;
+            color: #555;
+        }
+
+        /* 输入区 */
+        .input-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .input-row input {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px 14px;
+            font-size: 1.1em;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .input-row input:focus { border-color: #667eea; }
+        .btn {
+            padding: 10px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5a6fd6; }
+        .btn-secondary { background: #f0f0f0; color: #555; }
+        .btn-secondary:hover { background: #e0e0e0; }
+        .btn-success { background: #4CAF50; color: white; }
+        .btn-success:hover { background: #43a047; }
+        .btn-warning { background: #FF9800; color: white; }
+        .btn-warning:hover { background: #f57c00; }
+
+        /* 快捷汉字 */
+        .quick-chars {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .quick-char {
+            width: 42px; height: 42px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3em;
+            border: 2px solid #e8e8e8;
+            border-radius: 10px;
+            cursor: pointer;
+            background: #fafafa;
+            transition: all 0.2s;
+        }
+        .quick-char:hover { border-color: #667eea; background: #f0f2ff; transform: scale(1.08); }
+        .quick-char.active { border-color: #667eea; background: #667eea; color: white; }
+
+        /* 难度选择 */
+        .grade-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .grade-btn {
+            padding: 6px 14px;
+            font-size: 0.85em;
+            border: 2px solid #e0e0e0;
+            border-radius: 20px;
+            cursor: pointer;
+            background: white;
+            transition: all 0.2s;
+        }
+        .grade-btn:hover { border-color: #667eea; }
+        .grade-btn.active { border-color: #667eea; background: #667eea; color: white; }
+
+        /* 展示区 */
+        .display-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .writer-box {
+            text-align: center;
+        }
+        .writer-box h3 {
+            font-size: 0.95em;
+            color: #888;
+            margin-bottom: 8px;
+        }
+        #writer-demo, #writer-quiz {
+            border: 2px solid #e8e8e8;
+            border-radius: 12px;
+            background: #fefefe;
+        }
+
+        /* 控制按钮 */
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        /* 结果统计 */
+        .stats {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 12px 20px;
+            background: #f8f9ff;
+            border-radius: 12px;
+            min-width: 90px;
+        }
+        .stat-item .num {
+            font-size: 1.6em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-item .label {
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        /* 反馈消息 */
+        .feedback {
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: 600;
+            padding: 10px;
+            margin-top: 12px;
+            border-radius: 10px;
+            display: none;
+        }
+        .feedback.correct { display: block; background: #e8f5e9; color: #2e7d32; }
+        .feedback.wrong { display: block; background: #fbe9e7; color: #c62828; }
+        .feedback.info { display: block; background: #e3f2fd; color: #1565c0; }
+
+        /* 笔画信息 */
+        .stroke-info {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 0.95em;
+            color: #666;
+        }
+        .stroke-info .count {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        /* 成语列表 */
+        .char-list-display {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        .char-list-item {
+            padding: 4px 10px;
+            background: #f0f2ff;
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: #667eea;
+            cursor: pointer;
+        }
+        .char-list-item:hover { background: #667eea; color: white; }
+        .char-list-item.done { background: #e8f5e9; color: #4caf50; }
+        .char-list-item.current { background: #667eea; color: white; }
+
+        @media (max-width: 500px) {
+            .container { padding: 12px; }
+            .card { padding: 16px; }
+            header h1 { font-size: 1.4em; }
+            .display-area { gap: 12px; }
+            .btn { padding: 8px 14px; font-size: 0.9em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="../index.html" class="back-link">← 返回导航</a>
+            <h1>✍️ 汉字笔画顺序练习器</h1>
+            <p>观察笔顺动画 → 跟随练习书写 → 掌握正确笔顺</p>
+        </header>
+
+        <!-- 输入选择 -->
+        <div class="card">
+            <h2>📝 选择汉字</h2>
+            <div class="input-row">
+                <input type="text" id="charInput" placeholder="输入一个汉字" maxlength="1">
+                <button class="btn btn-primary" onclick="loadChar()">开始练习</button>
+                <button class="btn btn-secondary" onclick="randomChar()">🎲 随机</button>
+            </div>
+            <div class="grade-selector" style="margin-top:14px;">
+                <span style="line-height:32px;color:#888;font-size:0.9em;">难度：</span>
+                <button class="grade-btn active" data-grade="1" onclick="setGrade(1,this)">一年级</button>
+                <button class="grade-btn" data-grade="2" onclick="setGrade(2,this)">二年级</button>
+                <button class="grade-btn" data-grade="3" onclick="setGrade(3,this)">三年级</button>
+                <button class="grade-btn" data-grade="4" onclick="setGrade(4,this)">常用字</button>
+            </div>
+            <div class="quick-chars" id="quickChars"></div>
+        </div>
+
+        <!-- 演示与练习 -->
+        <div class="card" id="practiceCard" style="display:none;">
+            <h2>🖊️ 笔顺演示与练习</h2>
+            <div class="stroke-info">
+                当前汉字：<span id="currentChar" style="font-size:1.5em;font-weight:bold;"></span>
+                &nbsp;|&nbsp; 笔画数：<span class="count" id="strokeCount">-</span>
+            </div>
+            <div class="display-area">
+                <div class="writer-box">
+                    <h3>📺 笔顺演示</h3>
+                    <div id="writer-demo"></div>
+                </div>
+                <div class="writer-box">
+                    <h3>✏️ 跟随书写</h3>
+                    <div id="writer-quiz"></div>
+                </div>
+            </div>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="playAnimation()">▶ 播放动画</button>
+                <button class="btn btn-secondary" onclick="resetQuiz()">🔄 重写</button>
+                <button class="btn btn-warning" onclick="showHint()">💡 提示</button>
+                <button class="btn btn-success" onclick="nextChar()">下一个 →</button>
+            </div>
+            <div id="feedback" class="feedback"></div>
+        </div>
+
+        <!-- 连续练习模式 -->
+        <div class="card" id="batchCard" style="display:none;">
+            <h2>📊 练习进度</h2>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="num" id="statTotal">0</div>
+                    <div class="label">总字数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="num" id="statCorrect">0</div>
+                    <div class="label">✅ 正确</div>
+                </div>
+                <div class="stat-item">
+                    <div class="num" id="statWrong">0</div>
+                    <div class="label">❌ 错误</div>
+                </div>
+                <div class="stat-item">
+                    <div class="num" id="statAccuracy">-</div>
+                    <div class="label">准确率</div>
+                </div>
+            </div>
+            <div class="char-list-display" id="charListDisplay"></div>
+        </div>
+    </div>
+
+    <script>
+    // 分年级常用汉字
+    const GRADE_CHARS = {
+        1: '一二三四五六七八九十上下大小人口手日月水火山石田土木禾竹花草虫鱼鸟马牛羊犬猫天地风雨雪云星光电气春夏秋冬东西南北前后左右多少长短高低远近早晚明暗开关出入来去走跑跳飞坐立看听说话读写画唱',
+        2: '园校班教室书包笔纸尺刀本桌椅门窗灯钟表车船路桥楼城村海河湖江池塘井泉溪岸岛洲森林果树叶根茎种子芽苗花瓣蜜蜂蝴蝶蚂蚁蜻蜓青蛙乌龟兔鹅鸡鸭鹰猴象狮虎熊猪鹿鼠蛇龙凤彩色红黄蓝绿紫黑白灰粉橙',
+        3: '州涌峰崖壁谷洞穴泥沙尘雾露霜冰冻温暖凉热烤煮蒸炒烧烟灰炭灯烛焰闪雷阵暴晴阴雾霾旱涝潮汐浪涛波纹流漂浮沉淹没深浅清浊甜苦辣酸咸淡浓稀软硬粗细厚薄宽窄轻重快慢忙闲难易穷富贵贱美丑善恶真假',
+        4: '政府省市县区镇乡村庄街道巷院馆所厂矿站港码头机场铁轨航线旅途径程距离速率频繁偶尔经常通常往往总是永远暂时突然逐渐终于已经曾经将要正在刚才以前以后之间期间当中左右大约几乎完全非常特别尤其格外'
+    };
+
+    let currentGrade = 1;
+    let charPool = [];
+    let charIndex = 0;
+    let writerDemo = null;
+    let writerQuiz = null;
+    let stats = { total: 0, correct: 0, wrong: 0 };
+
+    // 计算画布大小
+    function getCanvasSize() {
+        const w = window.innerWidth;
+        if (w < 400) return 140;
+        if (w < 600) return 180;
+        return 220;
+    }
+
+    // 初始化
+    function init() {
+        setGrade(1, document.querySelector('.grade-btn'));
+    }
+
+    function setGrade(grade, el) {
+        currentGrade = grade;
+        document.querySelectorAll('.grade-btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+        const chars = GRADE_CHARS[grade];
+        // 随机选20个展示
+        const shuffled = [...chars].sort(() => Math.random() - 0.5);
+        charPool = shuffled.slice(0, 20);
+        charIndex = 0;
+        renderQuickChars();
+    }
+
+    function renderQuickChars() {
+        const container = document.getElementById('quickChars');
+        container.innerHTML = '';
+        charPool.forEach((c, i) => {
+            const div = document.createElement('div');
+            div.className = 'quick-char' + (i === charIndex ? ' active' : '');
+            div.textContent = c;
+            div.onclick = () => { charIndex = i; loadCharByValue(c); renderQuickChars(); };
+            container.appendChild(div);
+        });
+    }
+
+    function loadChar() {
+        const input = document.getElementById('charInput').value.trim();
+        if (!input) return;
+        const ch = input[0];
+        loadCharByValue(ch);
+    }
+
+    function randomChar() {
+        const chars = GRADE_CHARS[currentGrade];
+        const ch = chars[Math.floor(Math.random() * chars.length)];
+        document.getElementById('charInput').value = ch;
+        loadCharByValue(ch);
+    }
+
+    function loadCharByValue(ch) {
+        document.getElementById('charInput').value = ch;
+        document.getElementById('currentChar').textContent = ch;
+        document.getElementById('practiceCard').style.display = '';
+        document.getElementById('batchCard').style.display = '';
+        clearFeedback();
+
+        const size = getCanvasSize();
+
+        // 清空旧实例
+        document.getElementById('writer-demo').innerHTML = '';
+        document.getElementById('writer-quiz').innerHTML = '';
+
+        // 演示Writer
+        writerDemo = HanziWriter.create('writer-demo', ch, {
+            width: size,
+            height: size,
+            padding: 10,
+            showOutline: true,
+            showCharacter: true,
+            strokeAnimationSpeed: 1,
+            delayBetweenStrokes: 300,
+            strokeColor: '#333',
+            outlineColor: '#ddd',
+            drawingColor: '#667eea',
+            radicalColor: '#764ba2'
+        });
+
+        // 练习Writer
+        writerQuiz = HanziWriter.create('writer-quiz', ch, {
+            width: size,
+            height: size,
+            padding: 10,
+            showOutline: true,
+            showCharacter: false,
+            showHintAfterMisses: 3,
+            highlightOnComplete: true,
+            strokeColor: '#333',
+            outlineColor: '#ddd',
+            drawingColor: '#4CAF50',
+            highlightColor: '#667eea'
+        });
+
+        writerQuiz.quiz({
+            onMistake: function(data) {
+                showFeedback('笔画不对哦，再试试！第 ' + (data.strokeNum + 1) + ' 笔', 'wrong');
+            },
+            onCorrectStroke: function(data) {
+                showFeedback('✅ 第 ' + (data.strokeNum + 1) + '/' + data.totalStrokes + ' 笔正确！', 'correct');
+                document.getElementById('strokeCount').textContent = data.totalStrokes;
+            },
+            onComplete: function(data) {
+                if (data.totalMistakes === 0) {
+                    showFeedback('🎉 太棒了！全部正确，零失误！', 'correct');
+                    stats.correct++;
+                } else {
+                    showFeedback('👏 完成了！错了 ' + data.totalMistakes + ' 次，继续加油！', 'info');
+                    stats.wrong++;
+                }
+                stats.total++;
+                updateStats();
+                markCharDone();
+            }
+        });
+
+        // 获取笔画数
+        HanziWriter.loadCharacterData(ch).then(function(data) {
+            document.getElementById('strokeCount').textContent = data.strokes.length;
+        });
+
+        // 高亮快捷栏
+        document.querySelectorAll('.quick-char').forEach(el => {
+            el.classList.toggle('active', el.textContent === ch);
+        });
+    }
+
+    function playAnimation() {
+        if (writerDemo) {
+            writerDemo.hideCharacter();
+            writerDemo.animateCharacter();
+        }
+    }
+
+    function resetQuiz() {
+        clearFeedback();
+        if (writerQuiz) {
+            writerQuiz.quiz({
+                onMistake: function(data) {
+                    showFeedback('笔画不对哦，再试试！第 ' + (data.strokeNum + 1) + ' 笔', 'wrong');
+                },
+                onCorrectStroke: function(data) {
+                    showFeedback('✅ 第 ' + (data.strokeNum + 1) + '/' + data.totalStrokes + ' 笔正确！', 'correct');
+                },
+                onComplete: function(data) {
+                    if (data.totalMistakes === 0) {
+                        showFeedback('🎉 太棒了！全部正确，零失误！', 'correct');
+                        stats.correct++;
+                    } else {
+                        showFeedback('👏 完成了！错了 ' + data.totalMistakes + ' 次，继续加油！', 'info');
+                        stats.wrong++;
+                    }
+                    stats.total++;
+                    updateStats();
+                    markCharDone();
+                }
+            });
+        }
+    }
+
+    function showHint() {
+        if (writerDemo) {
+            writerDemo.hideCharacter();
+            writerDemo.animateCharacter();
+        }
+        showFeedback('💡 看看左边的笔顺动画提示吧！', 'info');
+    }
+
+    function nextChar() {
+        charIndex = (charIndex + 1) % charPool.length;
+        const ch = charPool[charIndex];
+        loadCharByValue(ch);
+        renderQuickChars();
+    }
+
+    function showFeedback(msg, type) {
+        const el = document.getElementById('feedback');
+        el.textContent = msg;
+        el.className = 'feedback ' + type;
+    }
+
+    function clearFeedback() {
+        const el = document.getElementById('feedback');
+        el.className = 'feedback';
+        el.textContent = '';
+    }
+
+    function updateStats() {
+        document.getElementById('statTotal').textContent = stats.total;
+        document.getElementById('statCorrect').textContent = stats.correct;
+        document.getElementById('statWrong').textContent = stats.wrong;
+        const acc = stats.total > 0 ? Math.round(stats.correct / stats.total * 100) + '%' : '-';
+        document.getElementById('statAccuracy').textContent = acc;
+    }
+
+    function markCharDone() {
+        document.querySelectorAll('.quick-char').forEach(el => {
+            if (el.textContent === document.getElementById('currentChar').textContent) {
+                el.classList.add('done');
+            }
+        });
+    }
+
+    // 回车提交
+    document.getElementById('charInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') loadChar();
+    });
+
+    init();
+    </script>
+</body>
+</html>
