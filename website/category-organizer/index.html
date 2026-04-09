@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🗂️ 分类收纳训练器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; padding: 20px; color: #333;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        header { text-align: center; color: #fff; margin-bottom: 20px; }
+        header h1 { font-size: 2em; margin-bottom: 6px; }
+        header p { opacity: 0.9; font-size: 1em; }
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255,255,255,0.15); border-radius: 12px;
+            padding: 10px 20px; margin-bottom: 20px; color: #fff;
+            flex-wrap: wrap; gap: 10px;
+        }
+        .top-bar .info { font-size: 1em; }
+        .top-bar .info span { font-weight: bold; font-size: 1.2em; }
+        .top-bar select, .top-bar button {
+            padding: 8px 16px; border-radius: 8px; border: none;
+            font-size: 0.95em; cursor: pointer;
+        }
+        .top-bar select { background: #fff; color: #333; }
+        .top-bar button {
+            background: #ff6b6b; color: #fff; font-weight: bold;
+            transition: background 0.2s;
+        }
+        .top-bar button:hover { background: #ee5a5a; }
+        .items-pool {
+            background: rgba(255,255,255,0.95); border-radius: 16px;
+            padding: 16px; margin-bottom: 20px;
+            min-height: 80px; display: flex; flex-wrap: wrap; gap: 10px;
+            align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .items-pool h3 {
+            width: 100%; text-align: center; color: #764ba2;
+            margin-bottom: 4px; font-size: 1em;
+        }
+        .item {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 16px; border-radius: 20px;
+            background: #f0f0f0; cursor: grab; font-size: 1em;
+            border: 2px solid transparent; transition: all 0.2s;
+            user-select: none; touch-action: none;
+        }
+        .item:hover { border-color: #764ba2; transform: scale(1.05); }
+        .item.dragging { opacity: 0.5; transform: scale(0.95); }
+        .item .emoji { font-size: 1.3em; }
+        .categories {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px; margin-bottom: 20px;
+        }
+        .category-box {
+            background: rgba(255,255,255,0.95); border-radius: 16px;
+            padding: 14px; min-height: 160px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s; border: 3px dashed transparent;
+        }
+        .category-box.drag-over {
+            border-color: #764ba2; background: rgba(255,255,255,1);
+            transform: scale(1.02);
+        }
+        .category-box h3 {
+            text-align: center; margin-bottom: 10px;
+            padding-bottom: 8px; border-bottom: 2px solid #eee;
+            font-size: 1.05em;
+        }
+        .category-box .drop-zone {
+            min-height: 80px; display: flex; flex-wrap: wrap;
+            gap: 8px; align-items: flex-start; align-content: flex-start;
+        }
+        .category-box .drop-zone .item { font-size: 0.9em; padding: 6px 12px; }
+        .category-box .placeholder {
+            width: 100%; text-align: center; color: #bbb;
+            font-size: 0.9em; padding: 20px 0;
+        }
+        .result-banner {
+            text-align: center; padding: 20px; border-radius: 16px;
+            margin-bottom: 20px; font-size: 1.2em; font-weight: bold;
+            display: none; animation: fadeIn 0.5s;
+        }
+        .result-banner.success { background: #d4edda; color: #155724; display: block; }
+        .result-banner.partial { background: #fff3cd; color: #856404; display: block; }
+        .item.correct { background: #d4edda; border-color: #28a745; }
+        .item.wrong { background: #f8d7da; border-color: #dc3545; }
+        .back-link {
+            display: inline-block; color: #fff; text-decoration: none;
+            margin-bottom: 12px; opacity: 0.85; font-size: 0.95em;
+        }
+        .back-link:hover { opacity: 1; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+        @media (max-width: 600px) {
+            header h1 { font-size: 1.5em; }
+            .categories { grid-template-columns: 1fr 1fr; }
+            .item { font-size: 0.85em; padding: 6px 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">← 返回导航</a>
+        <header>
+            <h1>🗂️ 分类收纳训练器</h1>
+            <p>将物品拖入正确的类别，训练归纳思维与分类逻辑</p>
+        </header>
+        <div class="top-bar">
+            <div class="info">得分：<span id="score">0</span> | 第 <span id="round">1</span> 关</div>
+            <div>
+                <select id="difficulty">
+                    <option value="easy">简单（8个物品）</option>
+                    <option value="medium" selected>中等（12个物品）</option>
+                    <option value="hard">困难（16个物品）</option>
+                </select>
+                <button id="checkBtn" onclick="checkAnswers()">✅ 检查</button>
+                <button onclick="newRound()">🔄 换一批</button>
+            </div>
+        </div>
+        <div id="result" class="result-banner"></div>
+        <div class="items-pool" id="pool">
+            <h3>📦 待分类物品（拖到下方对应类别）</h3>
+        </div>
+        <div class="categories" id="categories"></div>
+    </div>
+
+<script>
+const THEMES = [
+    {
+        name: "家居收纳",
+        categories: {
+            "🛋️ 客厅": ["遥控器","杂志","抱枕","花瓶","相框","茶杯"],
+            "🍳 厨房": ["锅铲","砧板","调料瓶","洗洁精","围裙","保鲜膜"],
+            "🛁 卫生间": ["牙刷","毛巾","洗发水","浴球","马桶刷","漱口杯"],
+            "🛏️ 卧室": ["枕头","闹钟","睡衣","台灯","衣架","床单"]
+        }
+    },
+    {
+        name: "文具整理",
+        categories: {
+            "✏️ 书写工具": ["铅笔","钢笔","马克笔","蜡笔","圆珠笔","毛笔"],
+            "📐 测量工具": ["直尺","三角板","量角器","圆规","卷尺","计算器"],
+            "📎 整理用品": ["文件夹","订书机","回形针","便利贴","胶带","书签"],
+            "🎨 美术用品": ["水彩颜料","画笔","调色盘","素描纸","橡皮泥","剪刀"]
+        }
+    },
+    {
+        name: "食物分类",
+        categories: {
+            "🥬 蔬菜": ["白菜","胡萝卜","西红柿","黄瓜","土豆","菠菜"],
+            "🍎 水果": ["苹果","香蕉","葡萄","西瓜","草莓","橙子"],
+            "🥩 肉类": ["鸡肉","牛肉","猪肉","鱼肉","虾","羊肉"],
+            "🍞 主食": ["米饭","面条","馒头","面包","饺子","包子"]
+        }
+    },
+    {
+        name: "衣物整理",
+        categories: {
+            "👕 上衣": ["T恤","衬衫","毛衣","卫衣","外套","马甲"],
+            "👖 下装": ["牛仔裤","短裤","运动裤","裙子","打底裤","西裤"],
+            "🧤 配饰": ["帽子","围巾","手套","腰带","领带","手表"],
+            "👟 鞋袜": ["运动鞋","拖鞋","皮鞋","棉袜","凉鞋","雨靴"]
+        }
+    },
+    {
+        name: "学科分类",
+        categories: {
+            "📖 语文": ["作文本","字典","古诗集","课文","拼音卡","成语词典"],
+            "🔢 数学": ["口算本","量角器","公式卡","计算器","几何模型","数独"],
+            "🔬 科学": ["放大镜","试管","标本","地球仪","温度计","磁铁"],
+            "🎵 艺术": ["画笔","口琴","舞蹈鞋","折纸","彩泥","竖笛"]
+        }
+    },
+    {
+        name: "垃圾分类",
+        categories: {
+            "♻️ 可回收": ["塑料瓶","旧报纸","易拉罐","玻璃瓶","纸箱","旧衣服"],
+            "🍌 厨余垃圾": ["果皮","剩饭","菜叶","蛋壳","茶渣","鱼骨"],
+            "🔋 有害垃圾": ["废电池","过期药","灯泡","油漆桶","杀虫剂","水银温度计"],
+            "🗑️ 其他垃圾": ["餐巾纸","烟蒂","陶瓷碎片","尘土","一次性杯","创可贴"]
+        }
+    }
+];
+
+let currentTheme, currentItems, score = 0, round = 1;
+let draggedEl = null;
+
+function getDiffCount() {
+    const d = document.getElementById("difficulty").value;
+    return d === "easy" ? 8 : d === "medium" ? 12 : 16;
+}
+
+function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function pickTheme() {
+    return THEMES[Math.floor(Math.random() * THEMES.length)];
+}
+
+function newRound() {
+    document.getElementById("result").className = "result-banner";
+    document.getElementById("result").textContent = "";
+    currentTheme = pickTheme();
+    const count = getDiffCount();
+    const cats = Object.keys(currentTheme.categories);
+    const perCat = Math.ceil(count / cats.length);
+    let allItems = [];
+    cats.forEach(cat => {
+        const items = currentTheme.categories[cat];
+        const picked = shuffle(items).slice(0, perCat);
+        picked.forEach(name => allItems.push({ name, category: cat }));
+    });
+    allItems = shuffle(allItems).slice(0, count);
+    currentItems = allItems;
+    renderPool();
+    renderCategories(cats);
+    document.getElementById("round").textContent = round;
+}
+
+function renderPool() {
+    const pool = document.getElementById("pool");
+    pool.innerHTML = '<h3>📦 待分类物品（拖到下方对应类别）</h3>';
+    currentItems.forEach((item, i) => {
+        const el = createItemEl(item.name, item.category, i);
+        pool.appendChild(el);
+    });
+}
+
+function createItemEl(name, category, idx) {
+    const el = document.createElement("div");
+    el.className = "item";
+    el.draggable = true;
+    el.dataset.category = category;
+    el.dataset.idx = idx;
+    el.innerHTML = `<span class="name">${name}</span>`;
+    el.addEventListener("dragstart", onDragStart);
+    el.addEventListener("dragend", onDragEnd);
+    // Touch support
+    el.addEventListener("touchstart", onTouchStart, { passive: false });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd);
+    return el;
+}
+
+function renderCategories(cats) {
+    const container = document.getElementById("categories");
+    container.innerHTML = "";
+    cats.forEach(cat => {
+        const box = document.createElement("div");
+        box.className = "category-box";
+        box.innerHTML = `<h3>${cat}</h3><div class="drop-zone" data-cat="${cat}"><div class="placeholder">拖放物品到这里</div></div>`;
+        const zone = box.querySelector(".drop-zone");
+        zone.addEventListener("dragover", e => { e.preventDefault(); box.classList.add("drag-over"); });
+        zone.addEventListener("dragleave", () => box.classList.remove("drag-over"));
+        zone.addEventListener("drop", e => { e.preventDefault(); box.classList.remove("drag-over"); dropItem(zone); });
+        container.appendChild(box);
+    });
+}
+
+function onDragStart(e) {
+    draggedEl = e.target.closest(".item");
+    draggedEl.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+}
+function onDragEnd() {
+    if (draggedEl) draggedEl.classList.remove("dragging");
+    draggedEl = null;
+}
+
+function dropItem(zone) {
+    if (!draggedEl) return;
+    const placeholder = zone.querySelector(".placeholder");
+    if (placeholder) placeholder.remove();
+    draggedEl.classList.remove("dragging", "correct", "wrong");
+    zone.appendChild(draggedEl);
+    draggedEl = null;
+}
+
+// Touch drag support
+let touchClone = null, touchSource = null;
+function onTouchStart(e) {
+    e.preventDefault();
+    touchSource = e.target.closest(".item");
+    if (!touchSource) return;
+    draggedEl = touchSource;
+    touchSource.classList.add("dragging");
+}
+function onTouchMove(e) {
+    e.preventDefault();
+    if (!touchSource) return;
+    const touch = e.touches[0];
+    // Highlight drop zone under finger
+    document.querySelectorAll(".category-box").forEach(b => b.classList.remove("drag-over"));
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (el) {
+        const box = el.closest(".category-box");
+        if (box) box.classList.add("drag-over");
+    }
+}
+function onTouchEnd(e) {
+    if (!touchSource) return;
+    touchSource.classList.remove("dragging");
+    const touch = e.changedTouches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (el) {
+        const box = el.closest(".category-box");
+        if (box) {
+            const zone = box.querySelector(".drop-zone");
+            dropItem(zone);
+        }
+    }
+    draggedEl = null;
+    touchSource = null;
+    document.querySelectorAll(".category-box").forEach(b => b.classList.remove("drag-over"));
+}
+
+// Allow dropping back to pool
+const pool = document.getElementById("pool");
+pool.addEventListener("dragover", e => e.preventDefault());
+pool.addEventListener("drop", e => {
+    e.preventDefault();
+    if (!draggedEl) return;
+    draggedEl.classList.remove("dragging", "correct", "wrong");
+    pool.appendChild(draggedEl);
+    draggedEl = null;
+});
+
+function checkAnswers() {
+    const zones = document.querySelectorAll(".drop-zone");
+    let correct = 0, total = 0;
+    zones.forEach(zone => {
+        const cat = zone.dataset.cat;
+        zone.querySelectorAll(".item").forEach(item => {
+            total++;
+            if (item.dataset.category === cat) {
+                item.classList.add("correct");
+                item.classList.remove("wrong");
+                correct++;
+            } else {
+                item.classList.add("wrong");
+                item.classList.remove("correct");
+            }
+        });
+    });
+    // Items still in pool count as not placed
+    const poolItems = document.querySelectorAll("#pool .item");
+    poolItems.forEach(item => { item.classList.add("wrong"); item.classList.remove("correct"); });
+    total += poolItems.length;
+
+    const banner = document.getElementById("result");
+    if (correct === currentItems.length && poolItems.length === 0) {
+        score += correct * 10;
+        banner.className = "result-banner success";
+        banner.textContent = `🎉 全部正确！+${correct * 10}分！太棒了！`;
+        round++;
+        setTimeout(() => newRound(), 2000);
+    } else {
+        score += correct * 5;
+        banner.className = "result-banner partial";
+        banner.textContent = `答对 ${correct}/${currentItems.length}，红色的放错了哦，试试重新拖放～`;
+    }
+    document.getElementById("score").textContent = score;
+}
+
+document.getElementById("difficulty").addEventListener("change", () => { round = 1; score = 0; document.getElementById("score").textContent = 0; newRound(); });
+newRound();
+</script>
+</body>
+</html>
