@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📝 逻辑思维题库 - 小学训练</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        h1 { text-align: center; color: #667eea; margin-bottom: 10px; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 30px; }
+        .category-tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+        .category-tab { padding: 10px 20px; border: none; border-radius: 20px; cursor: pointer; font-size: 1em; transition: all 0.3s; background: #f0f0f0; color: #333; }
+        .category-tab.active { background: #667eea; color: white; }
+        .category-tab:hover { transform: translateY(-2px); }
+        .quiz-info { display: flex; justify-content: space-between; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px; }
+        .quiz-info span { font-weight: bold; color: #667eea; }
+        .question-card { background: #fff; border: 2px solid #e0e0e0; border-radius: 15px; padding: 20px; margin-bottom: 20px; }
+        .question-number { display: inline-block; background: #667eea; color: white; width: 30px; height: 30px; border-radius: 50%; text-align: center; line-height: 30px; margin-right: 10px; font-weight: bold; }
+        .question-text { font-size: 1.1em; color: #333; margin-bottom: 15px; line-height: 1.6; }
+        .options { display: flex; flex-direction: column; gap: 10px; }
+        .option { padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; transition: all 0.3s; }
+        .option:hover { border-color: #667eea; background: #f5f5ff; }
+        .option.selected { border-color: #667eea; background: #e8ecff; }
+        .option.correct { border-color: #28a745; background: #d4edda; }
+        .option.wrong { border-color: #dc3545; background: #f8d7da; }
+        .option.disabled { pointer-events: none; }
+        .analysis { margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 10px; border-left: 4px solid #ffc107; display: none; }
+        .analysis.show { display: block; }
+        .analysis-title { font-weight: bold; color: #856404; margin-bottom: 5px; }
+        .btn { padding: 12px 30px; border: none; border-radius: 10px; cursor: pointer; font-size: 1em; transition: all 0.3s; margin: 5px; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #218838; }
+        .controls { text-align: center; margin-top: 20px; }
+        .result-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .result-modal.show { display: flex; }
+        .result-content { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 400px; }
+        .result-score { font-size: 3em; font-weight: bold; color: #667eea; }
+        .result-message { font-size: 1.2em; color: #666; margin: 20px 0; }
+        .back-link { display: block; text-align: center; margin-top: 20px; color: #667eea; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 逻辑思维题库</h1>
+        <p class="subtitle">适合小学生的逻辑思维训练</p>
+        
+        <div class="category-tabs">
+            <button class="category-tab active" onclick="filterQuiz('all')">全部</button>
+            <button class="category-tab" onclick="filterQuiz('judgment')">判断题</button>
+            <button class="category-tab" onclick="filterQuiz('reasoning')">推理题</button>
+            <button class="category-tab" onclick="filterQuiz('choice')">选择题</button>
+        </div>
+        
+        <div class="quiz-info">
+            <div>当前: <span id="currentNum">1</span> / <span id="totalNum">10</span></div>
+            <div>得分: <span id="score">0</span> 分</div>
+        </div>
+        
+        <div id="questionContainer"></div>
+        
+        <div class="controls">
+            <button class="btn btn-primary" onclick="prevQuestion()">上一题</button>
+            <button class="btn btn-primary" onclick="nextQuestion()">下一题</button>
+            <button class="btn btn-success" onclick="submitQuiz()">提交答案</button>
+        </div>
+        
+        <a href="../index.html" class="back-link">← 返回首页</a>
+    </div>
+    
+    <div class="result-modal" id="resultModal">
+        <div class="result-content">
+            <h2>🎉 测试完成!</h2>
+            <div class="result-score" id="finalScore">0</div>
+            <div class="result-message" id="resultMessage">继续加油!</div>
+            <button class="btn btn-primary" onclick="restartQuiz()">再测一次</button>
+            <button class="btn btn-success" onclick="closeModal()">查看答案</button>
+        </div>
+    </div>
+
+    <script>
+    const quizData = [
+        {
+            type: 'judgment',
+            question: '小明比小红高，小红比小华高。那么小明一定比小华高。',
+            options: ['正确', '错误', '不确定'],
+            answer: 0,
+            analysis: '这是传递性推理。如果A>B, B>C, 那么A>C。小明>小红，小红>小华，所以小明>小华。'
+        },
+        {
+            type: 'judgment',
+            question: '所有的偶数都能被4整除。',
+            options: ['正确', '错误'],
+            answer: 1,
+            analysis: '错误。例如6是偶数但不能被4整除。只有能被4整除的偶数才能被4整除。'
+        },
+        {
+            type: 'reasoning',
+            question: '找规律: 2, 4, 8, 16, ? 下一个数是什么?',
+            options: ['24', '32', '64', '20'],
+            answer: 1,
+            analysis: '这是一个等比数列，每个数是前一个数的2倍。16×2=32。'
+        },
+        {
+            type: 'reasoning',
+            question: '小明、小红、小华三人赛跑。小明不是最快的，小红不是最快的。小华是最快的。谁是第二名?',
+            options: ['小明', '小红', '小华', '无法确定'],
+            answer: 1,
+            analysis: '小华是最快的(第一)，那么第二名应该是小红，因为小明不是最快的。'
+        },
+        {
+            type: 'choice',
+            question: '下面哪个图形和其他三个不一样?',
+            options: ['🔴圆形', '🔺三角形', '⬜正方形', '📐平行四边形'],
+            answer: 0,
+            analysis: '圆形没有角，其他三个图形都有角。'
+        },
+        {
+            type: 'reasoning',
+            question: '如果所有的猫都是动物，有些动物是黑色的，那么:',
+            options: ['所有的猫都是黑色的', '有些猫是黑色的', '不能确定', '没有猫是黑色的'],
+            answer: 2,
+            analysis: '不能确定。猫是动物，但动物是黑色的不代表这只动物是猫。'
+        },
+        {
+            type: 'choice',
+            question: '1, 1, 2, 3, 5, 8, ? 这组数的规律是?',
+            options: ['每次加1', '每次翻倍', '前两个数相加', '每次加2'],
+            answer: 2,
+            analysis: '这是斐波那契数列，每个数等于前两个数之和。5+8=13。'
+        },
+        {
+            type: 'judgment',
+            question: '正方形的四条边都相等。',
+            options: ['正确', '错误'],
+            answer: 0,
+            analysis: '正确。正方形的定义就是四条边相等、四个角都是直角。'
+        },
+        {
+            type: 'reasoning',
+            question: '一个盒子里面放着红球和蓝球。闭上眼睛摸球，至少摸几个球才能保证拿到两个同颜色的球?',
+            options: ['2个', '3个', '4个', '5个'],
+            answer: 1,
+            analysis: '考虑最坏情况:摸到1个红球、1个蓝球，第3个球不管是红还是蓝，都会有两个同色。'
+        },
+        {
+            type: 'choice',
+            question: '下面哪个数最大?',
+            options: ['0.5', '0.51', '0.499', '0.501'],
+            answer: 3,
+            analysis: '0.501最大。比较小数时先比较整数部分，再比较小数部分。'
+        }
+    ];
+
+    let currentQuestion = 0;
+    let userAnswers = [];
+    let score = 0;
+
+    function initQuiz() {
+        userAnswers = new Array(quizData.length).fill(-1);
+        score = 0;
+        currentQuestion = 0;
+        renderQuestion();
+    }
+
+    function filterQuiz(type) {
+        document.querySelectorAll('.category-tab').forEach(tab => tab.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+
+    function renderQuestion() {
+        const q = quizData[currentQuestion];
+        const container = document.getElementById('questionContainer');
+        
+        container.innerHTML = `
+            <div class="question-card">
+                <div class="question-number">${currentQuestion + 1}</div>
+                <div class="question-text">${q.question}</div>
+                <div class="options">
+                    ${q.options.map((opt, i) => `
+                        <div class="option ${userAnswers[currentQuestion] === i ? 'selected' : ''}" 
+                             onclick="selectOption(${i})">${opt}</div>
+                    `).join('')}
+                </div>
+                <div class="analysis" id="analysis${currentQuestion}">
+                    <div class="analysis-title">📖 答案解析:</div>
+                    ${q.analysis}
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('currentNum').textContent = currentQuestion + 1;
+        document.getElementById('totalNum').textContent = quizData.length;
+        document.getElementById('score').textContent = score;
+        
+        if (userAnswers[currentQuestion] !== -1) {
+            showAnalysis();
+        }
+    }
+
+    function selectOption(index) {
+        userAnswers[currentQuestion] = index;
+        renderQuestion();
+    }
+
+    function showAnalysis() {
+        const analysisEl = document.getElementById(`analysis${currentQuestion}`);
+        if (analysisEl) analysisEl.classList.add('show');
+        
+        const options = document.querySelectorAll('.option');
+        const correct = quizData[currentQuestion].answer;
+        
+        options.forEach((opt, i) => {
+            opt.classList.add('disabled');
+            if (i === correct) opt.classList.add('correct');
+            if (i === userAnswers[currentQuestion] && i !== correct) opt.classList.add('wrong');
+        });
+    }
+
+    function prevQuestion() {
+        if (currentQuestion > 0) {
+            currentQuestion--;
+            renderQuestion();
+        }
+    }
+
+    function nextQuestion() {
+        if (currentQuestion < quizData.length - 1) {
+            currentQuestion++;
+            renderQuestion();
+        }
+    }
+
+    function submitQuiz() {
+        score = 0;
+        userAnswers.forEach((ans, i) => {
+            if (ans === quizData[i].answer) score += 10;
+        });
+        
+        document.getElementById('finalScore').textContent = score;
+        const message = score >= 80 ? '太棒了!' : score >= 60 ? '不错哦!' : '继续加油!';
+        document.getElementById('resultMessage').textContent = message;
+        document.getElementById('resultModal').classList.add('show');
+        
+        for (let i = 0; i < quizData.length; i++) {
+            currentQuestion = i;
+            renderQuestion();
+        }
+    }
+
+    function restartQuiz() {
+        document.getElementById('resultModal').classList.remove('show');
+        initQuiz();
+    }
+
+    function closeModal() {
+        document.getElementById('resultModal').classList.remove('show');
+    }
+
+    initQuiz();
+    </script>
+</body>
+</html>
